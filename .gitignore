@@ -1,0 +1,9 @@
+*~
+.[#]*
+[#]*[#]
+*.Po
+*.o
+config.h.in
+config.h
+configure
+/autom4te.cache
