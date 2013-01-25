@@ -5,6 +5,11 @@
 *.o
 config.h.in
 config.h
+*.log
+config.status
+libtool
+.deps
+stamp-h1
 configure
 Makefile
 Makefile.in

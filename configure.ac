@@ -33,7 +33,6 @@ AC_PROG_CXX
 LT_INIT
 AM_INIT_AUTOMAKE([1.10 no-define subdir-objects])
 AM_SILENT_RULES([yes])
-AC_CONFIG_FILES([Makefile])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl ==== BASE PATH ====
@@ -99,7 +98,7 @@ AC_ARG_WITH(
 	AC_HELP_STRING(
 		[--with-qt-include-path=[QT_INCLUDE_PATH]],
 		[to specify the include path, default: $QT_BASE_PATH/include/qt4]),
-	[QT_LIBRARY_PATH="$withval"],
+	[QT_INCLUDE_PATH="$withval"],
 	[])
 
 dnl
@@ -165,7 +164,7 @@ AC_ARG_WITH(
 	AC_HELP_STRING(
 		[--with-qgis-include-path=[QGIS_INCLUDE_PATH]],
 		[to specify the include path, default: $QGIS_BASE_PATH/include/qgis]),
-	[QGIS_LIBRARY_PATH="$withval"],
+	[QGIS_INCLUDE_PATH="$withval"],
 	[])
 
 
@@ -257,9 +256,12 @@ AC_SUBST(EXT_LIBS, $EXT_LIBS)
 AC_SUBST(PLUGIN_DIR, $PLUGIN_DIR)
 AC_SUBST(PYTHON_INCLUDE, $PYTHON_INCLUDE)
 
-INCLUDES="$INCLUDES $EXT_INCLUDES"
-PATH="$PATH:$QT_BINARY_PATH"
-CXXFLAGS="$CXXFLAGS $EXT_INCLUDES $EXT_LIBS $EXT_FLAGS"
+export INCLUDES="$INCLUDES $EXT_INCLUDES"
+export PATH="$PATH:$QT_BINARY_PATH"
+export CXXFLAGS="$CXXFLAGS $EXT_INCLUDES $EXT_LIBS $EXT_FLAGS"
+export LIBS="$LIBS $EXT_LIBS"
+export LDFLAGS="$LDFLAGS $EXT_LIBS"
+
 
 AC_CHECK_LIB(
 	[qgis_core], [GEOPROJ4], ,
@@ -349,4 +351,5 @@ if echo "$host_alias" | grep android >/dev/null ; then
    AC_DEFINE([ANDROID], [1], [We are targetting an ANDROID device])
 fi
 
-AC_OUTPUT()
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
