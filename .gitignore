@@ -19,3 +19,4 @@ Makefile.in
 /INSTALL
 /install-sh
 /missing
+/m4/lt*.m4
