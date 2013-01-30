@@ -14,3 +14,8 @@ configure
 Makefile
 Makefile.in
 /autom4te.cache
+/depcomp
+/ltmain.sh
+/INSTALL
+/install-sh
+/missing
