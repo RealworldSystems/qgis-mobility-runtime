@@ -17,6 +17,13 @@ stamp-h1
 configure
 Makefile
 Makefile.in
+/depcomp
+/ltmain.sh
+/INSTALL
+/install-sh
+/missing
+/m4/lt*.m4
+/aclocal.m4
 .dirstamp
 /qgis.db
 /qgismobility
