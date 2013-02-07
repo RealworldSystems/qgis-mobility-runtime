@@ -30,22 +30,33 @@ MOC_V_0 = @echo "  MOC    $< > $@";
 
 lib_LTLIBRARIES += libqgismobility.la
 libqgismobility_la_SOURCES = \
+	main/generated/moc_QgsMobilityApplicationFrame.cpp \
+	main/QgsMobilityApplicationFrame.cpp \
         main/entrypoint.cpp
 
 libqgismobility_la_CPPFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include -I$(top_srcdir)/include/generated
 libqgismobility_la_CXXFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include -I$(top_srcdir)/include/generated
 libqgismobility_la_LIBADD = $(DEPS_LIBS)
 
+# Only build executables if we enabled the option during configuration
+
+if EXECUTABLE
+
 # Made this for temporary test purposes
 
-#in_PROGRAMS += qgismobility
-#gismobility_SOURCES = \
-#       main/entrypoint.cpp
-#gismobility_CPPFLAGS = $(DEPS_CFLAGS) $(AM_CFLAGS)
-#gismobility_CFLAGS = $(DEPS_CFLAGS) $(AM_CFLAGS)
-#gismobility_LDADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
+bin_PROGRAMS += qgismobility
+qgismobility_SOURCES = \
+	programs/qgismobility.cpp
+qgismobility_CPPFLAGS = $(DEPS_CFLAGS) $(AM_CFLAGS)
+qgismobility_CFLAGS = $(DEPS_CFLAGS) $(AM_CFLAGS)
+qgismobility_LDADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
 
+endif
+
+
+main/generated/moc_%.cpp: include/%.h main/%.cpp
+	$(MOC_V) @QT_BINARY_PATH@/moc $< -o $(top_srcdir)/$@
 
 clean:
-	@echo "  RM      $(QTEMP_DIR)/*" ; rm -rf $(top_srcdir)/src/generated/*
+	@echo "  RM      $(QTEMP_DIR)/*" ; rm -rf $(top_srcdir)/main/generated/*
 	@echo "  RM      $(QITEMP_DIR)/*" ; rm -rf $(top_srcdir)/include/generated/*

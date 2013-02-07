@@ -231,6 +231,25 @@ AC_ARG_WITH(
 	[PYTHON_INCLUDE_PATH="$withval"],
 	[])
 
+dnl
+dnl ---- Option to enable whether or not to build an executable
+dnl
+dnl Devices don't always support directly invoking executables. This might be
+dnl accomplished through an additional layer. By using this option, an
+dnl executable binary is compiled to load the library.
+AC_ARG_ENABLE(
+	[executable],
+	AC_HELP_STRING(
+		[--enable-executable],
+		[If you want to compile an aiding executable to the library]),
+		[executable=${enableval}],
+		[executable=no])
+
+dnl Inform Automake that we want an executable
+AM_CONDITIONAL(EXECUTABLE, test x$executable = xyes)
+
+
+
 AC_PATH_XTRA
 
 LIB_DIRS="-L$PYTHON_LIBRARY_PATH -L$QT_LIBRARY_PATH -L$QGIS_LIBRARY_PATH"
@@ -240,10 +259,11 @@ QT_INCLUDES="\
 	-I$QT_INCLUDE_PATH/Qt \
 	-I$QT_INCLUDE_PATH/QtCore \
 	-I$QT_INCLUDE_PATH/QtXml \
+	-I$QT_INCLUDE_PATH/QtGui \
 	-I$QT_INCLUDE_PATH/QtDeclarative"
 
 dnl TODO Need to find ways to do autoconf checks on these
-QT_LIBS="-lQtCore -lQtXml -lQtDeclarative"
+QT_LIBS="-lQtGui -lQtCore -lQtXml -lQtDeclarative"
 
 dnl TODO Need to find wais to do autoconf checks on -lz and -lm
 
