@@ -16,45 +16,13 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
+%Module(name=qgismobility, version=0)
 
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
+%Import QtCore/QtCoremod.sip
 
-#include <QList>
+%If (Qt_4_2_0 -)
 
-#include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
+%Include QgsMobilityConfigure.sip
+%Include QgsMobility.sip
 
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
-
-class QgsMobilityApplicationFrame : public QMainWindow
-{
-Q_OBJECT
-
-public slots:
-  void retrieveImage (const QImage &);
-
-public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
-  void rotate (int);
-  int rotation (void);
-
-protected:
-  void resizeEvent (QResizeEvent *);
-  int diagonal (void);
-
-private:
-  int mRotate;
-  QSize mSize;
-  QImage mImage;
-  QMutex mMutex;
-  
-  QImage copyImage (void);
-};
-  
-#endif
+%End

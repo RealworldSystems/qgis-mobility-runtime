@@ -45,7 +45,7 @@ BASE_PATH=/usr
 
 AC_ARG_WITH(
 	[base-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-base-path=[BASE_PATH]],
 		[to specify the base path, default: /lib]),
 	[BASE_PATH="$withval"],
@@ -65,7 +65,7 @@ QT_BASE_PATH=$BASE_PATH
 
 AC_ARG_WITH(
 	[qt-base-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qt-base-path=[QT_BASE_PATH]],
 		[to specify the base path, default: BASE_PATH]),
 	[QT_BASE_PATH="$withval"],
@@ -80,7 +80,7 @@ QT_LIBRARY_PATH=$QT_BASE_PATH/lib
 
 AC_ARG_WITH(
 	[qt-library-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qt-library-path=[QT_LIBRARY_PATH]],
 		[to specify the library path, default: $QT_BASE_PATH/lib]),
 	[QT_LIBRARY_PATH="$withval"],
@@ -95,7 +95,7 @@ QT_INCLUDE_PATH=$QT_BASE_PATH/include/qt4
 
 AC_ARG_WITH(
 	[qt-include-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qt-include-path=[QT_INCLUDE_PATH]],
 		[to specify the include path, default: $QT_BASE_PATH/include/qt4]),
 	[QT_INCLUDE_PATH="$withval"],
@@ -111,7 +111,7 @@ QT_BINARY_PATH=$QT_BASE_PATH/bin
 
 AC_ARG_WITH(
 	[qt-binary-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qt-binary-path=[QT_BINARY_PATH]],
 		[to specify the include path, default: $QT_BASE_PATH/bin]),
 	[QT_BINARY_PATH="$withval"],
@@ -131,7 +131,7 @@ QGIS_BASE_PATH=$BASE_PATH
 
 AC_ARG_WITH(
 	[qgis-base-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qgis-base-path=[QGIS_BASE_PATH]],
 		[to specify the base path, default: BASE_PATH]),
 	[QGIS_BASE_PATH="$withval"],
@@ -146,7 +146,7 @@ QGIS_LIBRARY_PATH=$QGIS_BASE_PATH/lib
 
 AC_ARG_WITH(
 	[qgis-library-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qgis-library-path=[QGIS_LIBRARY_PATH]],
 		[to specify the library path, default: $QGIS_BASE_PATH/lib]),
 	[QGIS_LIBRARY_PATH="$withval"],
@@ -161,7 +161,7 @@ QGIS_INCLUDE_PATH=$QGIS_BASE_PATH/include/qgis
 
 AC_ARG_WITH(
 	[qgis-include-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-qgis-include-path=[QGIS_INCLUDE_PATH]],
 		[to specify the include path, default: $QGIS_BASE_PATH/include/qgis]),
 	[QGIS_INCLUDE_PATH="$withval"],
@@ -182,11 +182,24 @@ PYTHON_BASE_PATH=$BASE_PATH
 
 AC_ARG_WITH(
 	[python-base-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-python-base-path=[PYTHON_BASE_PATH]],
 		[to specify the python base path, default: BASE_PATH]),
 	[PYTHON_BASE_PATH="$withval"],
 	[])
+
+dnl
+dnl ---- Python binary path ----
+dnl
+dnl We need the binary path to be able to get configuration items from SIP
+
+AC_ARG_WITH(
+	[python-binary-path],
+	AS_HELP_STRING(
+		[--with-python-binary-path=[PYTHON_BINARY_PATH]],
+		[to specify the python base path, default: PYTHON_BASE_PATH/bin]),
+	[PYTHON_BASE_PATH=${withval}],
+	[PYTHON_BINARY_PATH=${PYTHON_BASE_PATH}/bin])
 
 dnl
 dnl ---- Python library path ----
@@ -196,7 +209,7 @@ PYTHON_LIBRARY_PATH=$PYTHON_BASE_PATH/lib
 
 AC_ARG_WITH(
 	[python-library-path],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--with-python-library-path=[PYTHON_LIBRARY_PATH]],
 		[to specify the path to the python library directory, default: $PYTHON_BASE_PATH/lib]),
 	[PYTHON_LIBRARY_PATH="$withval"],
@@ -210,23 +223,23 @@ PYTHON_LIBRARY=python2.7
 
 AC_ARG_WITH(
 	[python-library],
-	AC_HELP_STRING(
-		[--with-python-library=[PYTHON LIBRARY]],
+	AS_HELP_STRING(
+		[--with-python-library=[PYTHON_LIBRARY]],
 		[to specify the name of the library, default: python2.7]),
 	[PYTHON_LIBRARY="$withval"],
 	[])
 
 
 dnl
-dnl ---- QGIS include path ----
+dnl ---- Python include path ----
 dnl
 dnl Set the include directory of python, normally in PYTHON_BASE_PATH/include/python
 PYTHON_INCLUDE_PATH=$PYTHON_BASE_PATH/include/python2.7
 
 AC_ARG_WITH(
 	[python-include-path],
-	AC_HELP_STRING(
-		[--with-python-include-path [PYTHON_INCLUDE_PATH]],
+	AS_HELP_STRING(
+		[--with-python-include-path=[PYTHON_INCLUDE_PATH]],
 		[to specify where the python libraries are, default: PYTHON_BASE_PATH/include/python2.7]),
 	[PYTHON_INCLUDE_PATH="$withval"],
 	[])
@@ -239,7 +252,7 @@ dnl accomplished through an additional layer. By using this option, an
 dnl executable binary is compiled to load the library.
 AC_ARG_ENABLE(
 	[executable],
-	AC_HELP_STRING(
+	AS_HELP_STRING(
 		[--enable-executable],
 		[If you want to compile an aiding executable to the library]),
 		[executable=${enableval}],
@@ -248,7 +261,126 @@ AC_ARG_ENABLE(
 dnl Inform Automake that we want an executable
 AM_CONDITIONAL(EXECUTABLE, test x$executable = xyes)
 
+dnl
+dnl ==== QGis Mobility ====
+dnl
+dnl ---- Overrides the Runtime QGis prefix path
+dnl
+dnl Ordinarily, on Unix systems, QGis lives at /usr, and is set to QGis Base 
+dnl Path. QGis mobility uses this information to determine where to set
+dnl the prefix path and the plugin path.
 
+AC_ARG_WITH(
+	[runtime-prefix-path],
+	AS_HELP_STRING(
+		[--with-runtime-prefix-path=QGIS_PREFIX_PATH],
+		[to specify where the runtime should find the]
+		[QGis 3rd party libraries.]
+		[(Default: QGIS_BASE_PATH)]),
+	[RUNTIME_PREFIX_PATH=${withval}],
+	[RUNTIME_PREFIX_PATH=${QGIS_BASE_PATH}])
+
+AC_DEFINE_UNQUOTED(
+	[PREFIX_PATH],
+	["$RUNTIME_PREFIX_PATH"],
+	[Define the runtime prefix path])
+
+dnl
+dnl ---- Overrides the Runtime QGis plugin path
+dnl
+dnl Ordinarily, on Unix systems, the plugins of QGis live at 
+dnl /usr/lib/qgis/plugins. This is used for both plugins as well as providers.
+
+AC_ARG_WITH(
+	[runtime-plugin-path],
+	AS_HELP_STRING(
+		[--with-runtime-plugin-path=QGIS_PLUGIN_PATH],
+		[to speficy where the runtime should find the]
+		[QGis plugins.]
+		[(Default: RUNTIME_PREFIX_PATH/lib/qgis/plugins)]),
+	[RUNTIME_PLUGIN_PATH=${withval}],
+	[RUNTIME_PLUGIN_PATH=${RUNTIME_PREFIX_PATH}/lib/qgis/plugins])
+
+AC_DEFINE_UNQUOTED(
+	[PLUGIN_PATH],
+	["$RUNTIME_PLUGIN_PATH"],
+	[Define the runtime plugin path])
+
+dnl
+dnl ---- The path where the project code lives
+dnl
+dnl This should be set to be the project code directory. This could be different
+dnl on the build host versus the target. This needs to have the explicit code
+dnl for the target, rather than the build machine.
+
+AC_ARG_WITH(
+	[project-code-path],
+	[AS_HELP_STRING(
+		[--with-project-code-path=PROJECT_CODE_PATH],
+		[to specify where the project code lives. The default points]
+		[to the example path in the source folder])],
+	[PROJECT_CODE_PATH=${withval}],
+	[PROJECT_CODE_PATH=$srcdir/samples/centercontrol])
+
+AC_DEFINE_UNQUOTED(
+	[PROJECT_CODE_PATH],
+	["$PROJECT_CODE_PATH"],
+	[Define the project code path])
+
+
+dnl
+dnl ---- The path where the preconfiguration code lives
+dnl
+dnl This should be set to be the preconfiguration directory. It defaults to
+dnl preconfig
+
+AC_ARG_WITH(
+	[preconfig-path],
+	[AS_HELP_STRING(
+		[--with-preconfig-path=PRECONFIG_PATH],
+		[to specify where preconfiguration lives])],
+	[PRECONFIG_PATH=${withval}],
+	[PRECONFIG_PATH=$srcdir/qgsmsystem])
+
+AC_DEFINE_UNQUOTED(
+	[PRECONFIG_PATH],
+	["$PRECONFIG_PATH"],
+	[Define the preconfiguration path])
+
+
+dnl
+dnl ---- This is a modified version of AX_SIP_DEVEL, look in m4/
+dnl
+AX_SIP_DEVEL
+
+dnl
+dnl ---- Doing the SIP matter with Autoconf
+dnl
+dnl SIP has rich documentation, however, there appears to be little about
+dnl how to integrate it in autoconf. It is clear that it depends on a valid
+dnl python installation.
+dnl
+	 
+AC_CHECK_PROG(
+	[PYTHON], [python], [$(which python)],
+	[AC_MSG_ERROR([python required for generating SIP files])],
+	[${PYTHON_BINARY_PATH}])
+
+SIP_PATH=$srcdir/sip
+SIP_GENERATED=`pwd`/sip/generated
+
+mkdir -p $SIP_GENERATED
+
+ac_sip_build_file="$SIP_GENERATED/qgsmobility.sbf"
+ac_py_pyqtconfig_import="from PyQt4 import pyqtconfig"
+ac_py_pyqt_sip_flags="pyqtconfig.Configuration().pyqt_sip_flags"
+ac_py_pyqt_sip_dir="pyqtconfig.Configuration().pyqt_sip_dir"
+ac_pyqt_sip_flags=`$PYTHON -c "$ac_py_pyqtconfig_import; print $ac_py_pyqt_sip_flags"`
+ac_pyqt_sip_dir=`$PYTHON -c "$ac_py_pyqtconfig_import; print $ac_py_pyqt_sip_dir"`
+
+SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file -I $ac_pyqt_sip_dir $ac_pyqt_sip_flags $SIP_PATH/QgsMobilitymod.sip"
+
+AC_SUBST(SIP_RUN, $SIP_RUN)
 
 AC_PATH_XTRA
 

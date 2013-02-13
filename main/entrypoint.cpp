@@ -20,41 +20,114 @@
 
 #include <Python.h>
 #include <QDebug>
-#include <QFileInfo>
-#include <QMap>
-#include <QList>
+#include <QtGui/QMessageBox>
+#include <QtCore/QThread>
 
 #include <qgsapplication.h>
 #include <qgsproject.h>
-#include <qgsmaplayerregistry.h>
-#include <qgsmaprenderer.h>
 #include <qgsproviderregistry.h>
+#include <qgsmaplayerregistry.h>
 #include <qgsvectordataprovider.h>
 
-#include <QgsMobilityApplicationFrame.h>
+#include <QgsMobilityConfigure.h>
+#include <QgsMobilityWorker.h>
+
+
+PyMODINIT_FUNC initqgismobility (void);
+
+
+static inline void 
+QgsMobilityInitialization (const QString & prefix_path,
+			   const QString & plugin_path);
+
+static inline void checkedImportModule (const char *name);
+static inline void configure (void);
+static inline void preConfigure (int argc, char *argv[]);
 
 /*
- * TODO: probably best is to not use QgsApplication, but need to figure out
- *       what init() does and doesn't. It's a static method, so no subclassing
- *       available.
+ * The initialization routine is responsible for delegating the necessary
+ * initialization options to QGis Core. It is a replacement routine of the
+ * original initialization routine.
  */
-
-class QgsMobilityApplication : public QgsApplication
+static inline void 
+QgsMobilityInitialization (const QString & prefix_path,
+			   const QString & plugin_path)
 {
+  // The prefix path is responsible for recognizing where libraries are
+  // put. In normal circumstances, the configure script will set this on
+  // our config.h, however, if for some reason this isn't the proper
+  // location, it can be overriden using the --prefix-path option.
   
-public:
-  QgsMobilityApplication (int & argc, char ** argv, bool GUIenabled) :
-    QgsApplication (argc, argv, GUIenabled, "")
-  {
-    setPrefixPath("/usr");
-    setPluginPath("/usr/lib/qgis/plugins");
-  }
+  // Besides the prefix path, it is feasible to require the need of the
+  // plugin path to be specified. Normally, the plugin path is determined
+  // using the configure script, however, this might need to be overridden.
+  
+  // Due to the dependent layout of initialization, the first thing set is the
+  // QgsProviderRegistry.
+  QgsProviderRegistry::instance (plugin_path);
+  QgsApplication::setPrefixPath (prefix_path);
+  QgsApplication::setPluginPath (plugin_path);
+  QgsMapLayerRegistry::instance ();
 
-};
+  QgsMobilityWorker::instance ();
+}
 
-int runtime(int argc, char *argv[])
+static inline QString QgmPyRepr (PyObject *object)
 {
+  PyObject *repr = PyObject_Repr (object);
+  QString s = PyString_AsString (repr);
+  Py_XDECREF (repr);
+  return s;
+}
 
+static inline void QgmPyDebug (PyObject *object)
+{
+  if (object == 0)
+    {
+      qDebug() << "Object is NULL";
+    }
+  else
+    {
+      if (PyCallable_Check (object))
+	{
+	  qDebug() << "Next object is callable";
+	}
+      
+      qDebug() << QgmPyRepr (object);
+    }
+}
+
+
+static inline void checkedImportModule (const char *name)
+{
+  PyObject *config_module = PyImport_ImportModule (name);
+  PyObject *etype, *evalue, *etraceback;
+  PyErr_Fetch (&etype, &evalue, &etraceback);
+  if (evalue != NULL)
+    { /* Should not reach */
+      QgmPyDebug (evalue);
+      QgmPyDebug (etraceback);
+    }
+
+  Py_XDECREF (config_module);
+}
+
+static inline void configure (void)
+{
+  checkedImportModule ("config.target");
+}
+
+static inline void preConfigure (int argc, char *argv[])
+{
+  PySys_SetArgv(argc, argv);
+  initqgismobility ();
+  checkedImportModule ("preconfig");
+}
+
+
+
+int runtime (int argc, char * argv[])
+{
   // Given a mobile application, we need to get the following things sorted:
   // - The Python home path [PYTHONHOME] (where do the normal python things live)
   // - The Python path [PYTHONPATH] (where do the Qt, QGis, Python and other 
@@ -62,42 +135,23 @@ int runtime(int argc, char *argv[])
   // - The LD_LIBRARY_PATH (where are all necessary plugin libraries)
   // - The PATH (where can we use certain executables)
 
-  QgsProviderRegistry::instance("/usr/lib/qgis/plugins");
+  QApplication app(argc, argv);
+  
+  setenv ("PYTHONPATH", PRECONFIG_PATH, 1);
+  setenv ("AUTOCONF_PROJECT_CODE_PATH", PROJECT_CODE_PATH, 1);
 
-  QgsMobilityApplication app(argc, argv, true);
   Py_SetProgramName(argv[0]);
   Py_Initialize();
-  PySys_SetArgv(argc, argv);
+  preConfigure (argc, argv);
 
-  QgsMobilityApplicationFrame frame;
-  frame.showFullScreen();
-  //frame.show();
-
-  // Should invoke reset of map canvas, map registry and legend
-  QgsProject *project = QgsProject::instance();
+  QgsMobilityConfigure config;
   
-  QStringList providerList =  QgsProviderRegistry::instance()->providerList();
-  for(QStringList::iterator iter = providerList.begin(); iter != providerList.end(); iter++)
-    {
-      qDebug() << *iter;
-    }
+  QgsMobilityInitialization (config.prefix_path (), config.plugin_path ());
 
-  // TODO: Need to get this done from an interface (and obviously not hardcoded like this!
-  QDir dir("samples/centercontrol");
-  QFileInfo fileInfo = QFileInfo(dir.absoluteFilePath ("centercontrol.qgs"));
-  qDebug() << project->read(fileInfo);
-  qDebug() << project->error();
-  
+  configure ();
 
-  //PySys_SetPath(PYTHON_PATH);
-  //FILE *fp = fopen(PYQT_MAIN, "r");
-  //PyRun_SimpleFile(fp, PYQT_MAIN);
-  
-  PyRun_SimpleString("print 'Hello World'\n");
+  PyRun_InteractiveLoop (stdin, "<stdin>");
   
   Py_Finalize();
-  app.exec();
-
-  //exit(0);
   return 0;
 }

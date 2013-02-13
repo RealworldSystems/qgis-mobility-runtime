@@ -16,45 +16,16 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (_QGS_MOBILITY_PAINTER_H)
+#define _QGS_MOBILITY_PAINTER_H
 
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
+#include <QtGui/QPaintDevice>
+#include <QtGui/QPainter>
 
-#include <QList>
-
-#include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
-
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
-
-class QgsMobilityApplicationFrame : public QMainWindow
+class QgsMobilityPainter : public QPainter
 {
-Q_OBJECT
-
-public slots:
-  void retrieveImage (const QImage &);
-
 public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
-  void rotate (int);
-  int rotation (void);
-
-protected:
-  void resizeEvent (QResizeEvent *);
-  int diagonal (void);
-
-private:
-  int mRotate;
-  QSize mSize;
-  QImage mImage;
-  QMutex mMutex;
-  
-  QImage copyImage (void);
+  bool begin (QPaintDevice *);
 };
-  
-#endif
+
+#endif // _QGS_MOBILITY_PAINTER_H

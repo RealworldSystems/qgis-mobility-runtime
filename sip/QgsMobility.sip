@@ -16,45 +16,17 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
-
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
-
-#include <QList>
-
-#include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
-
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
-
-class QgsMobilityApplicationFrame : public QMainWindow
+class QgsMobility : public QObject
 {
-Q_OBJECT
-
-public slots:
-  void retrieveImage (const QImage &);
+%TypeHeaderCode
+#include "../include/QgsMobility.h"
+%End
 
 public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
-  void rotate (int);
-  int rotation (void);
-
-protected:
-  void resizeEvent (QResizeEvent *);
-  int diagonal (void);
-
-private:
-  int mRotate;
-  QSize mSize;
-  QImage mImage;
-  QMutex mMutex;
-  
-  QImage copyImage (void);
+  QgsMobility ();
+  bool show_main_window_stack ();
+  bool hide_main_window_stack ();
+  QString load_project (QString);
+  bool rotate (int);
+  int rotation ();
 };
-  
-#endif

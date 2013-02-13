@@ -16,45 +16,19 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
-
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
-
-#include <QList>
-
-#include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
-
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
-
-class QgsMobilityApplicationFrame : public QMainWindow
+class QgsMobilityConfigure : public QObject
 {
-Q_OBJECT
-
-public slots:
-  void retrieveImage (const QImage &);
+%TypeHeaderCode
+#include "../include/QgsMobilityConfigure.h"
+%End
 
 public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
-  void rotate (int);
-  int rotation (void);
+  bool set_preconfiguration_dictionary (QMap<QString, QString>);
+  QString default_plugin_path ();
+  QString default_prefix_path ();
+  QString plugin_path ();
+  QString prefix_path ();
+  QString load_path ();
+  QMap<QString, QString> preconfiguration ();
 
-protected:
-  void resizeEvent (QResizeEvent *);
-  int diagonal (void);
-
-private:
-  int mRotate;
-  QSize mSize;
-  QImage mImage;
-  QMutex mMutex;
-  
-  QImage copyImage (void);
 };
-  
-#endif

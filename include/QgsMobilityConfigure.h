@@ -16,45 +16,30 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
+#if !defined (_QGS_MOBILITY_CONFIGURE_H)
+#define _QGS_MOBILITY_CONFIGURE_H
 
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
+#include <QObject>
+#include <QMap>
+#include <QString>
 
-#include <QList>
+class QgsMobilityRouter;
 
-#include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
-
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
-
-class QgsMobilityApplicationFrame : public QMainWindow
+class QgsMobilityConfigure : public QObject
 {
-Q_OBJECT
-
-public slots:
-  void retrieveImage (const QImage &);
+  Q_OBJECT
 
 public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
-  void rotate (int);
-  int rotation (void);
-
-protected:
-  void resizeEvent (QResizeEvent *);
-  int diagonal (void);
-
-private:
-  int mRotate;
-  QSize mSize;
-  QImage mImage;
-  QMutex mMutex;
-  
-  QImage copyImage (void);
+  QgsMobilityConfigure (void);
+  bool set_preconfiguration_dictionary (QMap<QString, QString>);
+  QString default_plugin_path (void);
+  QString default_prefix_path (void);
+  QString plugin_path (void);
+  QString prefix_path (void);
+  QString load_path (void);
+  QMap<QString, QString> preconfiguration (void);
+  bool route (QgsMobilityRouter);
 };
-  
-#endif
+
+
+#endif // _QGS_MOBILITY_CONFIGURE_H

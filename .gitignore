@@ -27,8 +27,10 @@ Makefile.in
 .dirstamp
 /qgis.db
 /qgismobility
+*.pyc
 
 # Directories to be ignored
 /autom4te.cache
 /.libs
 .deps
+generated
