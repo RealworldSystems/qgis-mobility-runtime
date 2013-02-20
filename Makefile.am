@@ -43,6 +43,15 @@ ECHO_V = $(ECHO_V_$(V))
 ECHO_V_ = $(ECHO_V_$(AM_DEFAULT_VERBOSITY))
 ECHO_V_0 = @echo $(ECHO_N);
 
+COPY_V = $(COPY_V_$(V))
+COPY_V_ = $(COPY_V_$(AM_DEFAULT_VERBOSITY))
+COPY_V_0 = @echo "  COPY   $@";
+
+RM_V = $(RM_V_$(V))
+RM_V_ = $(RM_V_$(AM_DEFAULT_VERBOSITY))
+RM_V_0 = @echo "  REMOVE $@";
+
+
 lib_LTLIBRARIES += libqgismobility.la
 libqgismobility_la_SOURCES = \
 	@top_builddir@/main/generated/moc_QgsMobilityApplicationFrame.cpp \
@@ -79,6 +88,8 @@ qgismobility_LDADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
 
 endif
 
+
+
 @top_builddir@/main/generated/moc_%.cpp: @top_srcdir@/include/%.h @top_srcdir@/main/%.cpp
 	$(MOC_V) @QT_BINARY_PATH@/moc $< -o $@
 
@@ -96,3 +107,16 @@ clean-local:
 	@echo "  RM      $(QITEMP_DIR)/*" ; rm -rf $(top_srcdir)/include/generated/*
 	@echo "  RM      $(SIPTEMP_DIR)/*.cpp"; rm -rf $(SIPTEMP_DIR)/*.cpp
 	@echo "  RM      $(SIPTEMP_DIR)/*.h"; rm -rf $(SIPTEMP_DIR)/*.h
+
+
+install-exec-am: install-qgsmsystem
+uninstall-exec-am: uninstall-qgsmsystem
+
+
+install-qgsmsystem:
+	$(ECHO_V) $(MAKE) uninstall-qgsmsystem
+	$(ECHO_V) $(MKDIR_P) "$(DESTDIR)$(libdir)/qgis-mobility"
+	$(COPY_V) cp -R "$(top_srcdir)/qgsmsystem" "$(DESTDIR)$(libdir)/qgis-mobility"
+
+uninstall-qgsmsystem:
+	$(RM_V) rm -rf "$(DESTDIR)$(libdir)/qgis-mobility"
