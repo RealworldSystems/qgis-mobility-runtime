@@ -45,17 +45,17 @@ ECHO_V_0 = @echo $(ECHO_N);
 
 lib_LTLIBRARIES += libqgismobility.la
 libqgismobility_la_SOURCES = \
-	@abs_top_builddir@/main/generated/moc_QgsMobilityApplicationFrame.cpp \
-	@abs_top_builddir@/main/generated/moc_QgsMobilityConfigure.cpp \
-	@abs_top_builddir@/main/generated/moc_QgsMobility.cpp \
-	@abs_top_builddir@/main/generated/moc_QgsMobilityWorker.cpp \
+	@top_builddir@/main/generated/moc_QgsMobilityApplicationFrame.cpp \
+	@top_builddir@/main/generated/moc_QgsMobilityConfigure.cpp \
+	@top_builddir@/main/generated/moc_QgsMobility.cpp \
+	@top_builddir@/main/generated/moc_QgsMobilityWorker.cpp \
 	main/QgsMobilityApplicationFrame.cpp \
         main/entrypoint.cpp \
 	main/QgsMobilityConfigure.cpp \
 	main/QgsMobility.cpp \
 	main/QgsMobilityWorker.cpp \
 	main/QgsMobilityPainter.cpp \
-	@abs_top_builddir@/sip/generated/almagation.cpp
+	@top_builddir@/sip/generated/almagation.cpp
 
 
 libqgismobility_la_CPPFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include -I$(top_srcdir)/include/generated \
@@ -79,7 +79,7 @@ qgismobility_LDADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
 
 endif
 
-@abs_top_builddir@/main/generated/moc_%.cpp: @abs_top_srcdir@/include/%.h @abs_top_srcdir@/main/%.cpp
+@top_builddir@/main/generated/moc_%.cpp: @top_srcdir@/include/%.h @top_srcdir@/main/%.cpp
 	$(MOC_V) @QT_BINARY_PATH@/moc $< -o $@
 
 sip: $(top_srcdir)/sip/*.sip Makefile
@@ -89,7 +89,7 @@ sip: $(top_srcdir)/sip/*.sip Makefile
 	$(SIP_V) @SIP_RUN@
 	$(SIPCAT_V) cat $(SIPTEMP_DIR)/*.cpp > $(SIPTEMP_DIR)/almagation.cpp
 
-@abs_top_builddir@/sip/generated/almagation.cpp: sip
+@top_builddir@/sip/generated/almagation.cpp: sip
 
 clean-local:
 	@echo "  RM      $(QTEMP_DIR)/*" ; rm -rf $(top_srcdir)/main/generated/*
