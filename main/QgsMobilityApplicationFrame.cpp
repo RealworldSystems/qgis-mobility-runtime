@@ -28,6 +28,7 @@
 
 QgsMobilityApplicationFrame::QgsMobilityApplicationFrame (void) : 
   QMainWindow (),
+  mainGrid (this),
   mRotate (0)
 {
   connect (&(QgsMobilityWorker::instance ()), SIGNAL (ready (const QImage &)),

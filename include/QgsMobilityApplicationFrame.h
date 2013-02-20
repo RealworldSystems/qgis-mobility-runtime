@@ -25,10 +25,7 @@
 #include <QtCore/QMutex>
 #include <QtGui/QWidget>
 #include <QtGui/QMainWindow>
-#include <QtXml/QDomDocument>
-
-#include <qgsmaprenderer.h>
-#include <qgsmaplayer.h>
+#include <QtGui/QGridLayout>
 
 class QgsMobilityApplicationFrame : public QMainWindow
 {
@@ -49,6 +46,10 @@ protected:
   int diagonal (void);
 
 private:
+  QGridLayout mainGrid;
+  QWidget mMenuWidget; // should become QML view
+  QWidget mCanvas;
+
   int mRotate;
   QSize mSize;
   QImage mImage;

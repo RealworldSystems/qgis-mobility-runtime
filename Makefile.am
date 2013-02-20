@@ -82,7 +82,7 @@ endif
 main/generated/moc_%.cpp: include/%.h main/%.cpp
 	$(MOC_V) @QT_BINARY_PATH@/moc $< -o $(top_srcdir)/$@
 
-sip: sip/*.sip Makefile
+sip: $(top_srcdir)/sip/*.sip Makefile
 	$(ECHO_V) mkdir -p $(SIPTEMP_DIR)
 	$(ECHO_V) rm -rf $(SIPTEMP_DIR)/*.cpp
 	$(ECHO_V) rm -rf $(SIPTEMP_DIR)/*.h
