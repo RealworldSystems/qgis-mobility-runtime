@@ -361,10 +361,7 @@ dnl how to integrate it in autoconf. It is clear that it depends on a valid
 dnl python installation.
 dnl
 	 
-AC_CHECK_PROG(
-	[PYTHON], [python], [$(which python)],
-	[],
-	[${PYTHON_BINARY_PATH}])
+AC_PATH_PROG([PYTHON], [python], [], [${PYTHON_BINARY_PATH}])
 
 if test x$PYTHON == x ; then
    AC_MSG_ERROR([python required for generating SIP files])

@@ -57,11 +57,9 @@ AC_ARG_WITH([sip-binary-path],
 	[SIP_BINARY_PATH=$PATH])
 
 #-- check for sip executable
-AC_CHECK_PROG(
-	[SIP], [sip], [$(which sip)], [],
-	[${SIP_BINARY_PATH}])
+AC_PATH_PROG([SIP], [sip], [], [${SIP_BINARY_PATH}])
 
-if test x$SIP == x; then
+if test x"$SIP" == x; then
    AC_MSG_ERROR([Can not locate sip binary at ${SIP_BINARY_PATH}])
 fi
 AC_SUBST(SIP)
