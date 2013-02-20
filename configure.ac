@@ -363,8 +363,12 @@ dnl
 	 
 AC_CHECK_PROG(
 	[PYTHON], [python], [$(which python)],
-	[AC_MSG_ERROR([python required for generating SIP files])],
+	[],
 	[${PYTHON_BINARY_PATH}])
+
+if test x$PYTHON == x ; then
+   AC_MSG_ERROR([python required for generating SIP files])
+fi
 
 SIP_PATH=$srcdir/sip
 SIP_GENERATED=`pwd`/sip/generated
@@ -411,7 +415,7 @@ AC_ARG_WITH(
 SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file \
 	      -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
 
-AC_SUBST(SIP_RUN, $SIP_RUN)
+AC_SUBST(SIP_RUN)
 
 AC_PATH_XTRA
 

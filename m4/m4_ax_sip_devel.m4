@@ -49,12 +49,22 @@ AC_ARG_WITH([sip],
         [sip_search_dir="$withval"],
         [sip_search_dir=""])
 
+#-- The path to lookup the SIP binary, if not given, $PATH is used
+AC_ARG_WITH([sip-binary-path],
+	AS_HELP_STRING([--with-sip-binary-path=PATH],
+		[specify the path to the sip binary]),
+	[SIP_BINARY_PATH=${withval}],
+	[SIP_BINARY_PATH=$PATH])
+
 #-- check for sip executable
-AC_PATH_PROG([SIP], [sip], [no])
-if test x"$SIP" == x"no"; then
-        AC_MSG_ERROR([failed to find required command sip])
+AC_CHECK_PROG(
+	[SIP], [sip], [$(which sip)], [],
+	[${SIP_BINARY_PATH}])
+
+if test x$SIP == x; then
+   AC_MSG_ERROR([Can not locate sip binary at ${SIP_BINARY_PATH}])
 fi
-AC_SUBST([SIP])
+AC_SUBST(SIP)
 
 #-- check for minimum sip version
 if test x"$1" != x""; then
