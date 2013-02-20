@@ -372,13 +372,44 @@ SIP_GENERATED=`pwd`/sip/generated
 mkdir -p $SIP_GENERATED
 
 ac_sip_build_file="$SIP_GENERATED/qgsmobility.sbf"
-ac_py_pyqtconfig_import="from PyQt4 import pyqtconfig"
+ac_py_import="from PyQt4 import pyqtconfig"
 ac_py_pyqt_sip_flags="pyqtconfig.Configuration().pyqt_sip_flags"
 ac_py_pyqt_sip_dir="pyqtconfig.Configuration().pyqt_sip_dir"
-ac_pyqt_sip_flags=`$PYTHON -c "$ac_py_pyqtconfig_import; print $ac_py_pyqt_sip_flags"`
-ac_pyqt_sip_dir=`$PYTHON -c "$ac_py_pyqtconfig_import; print $ac_py_pyqt_sip_dir"`
 
-SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file -I $ac_pyqt_sip_dir $ac_pyqt_sip_flags $SIP_PATH/QgsMobilitymod.sip"
+
+dnl
+dnl ---- Override options for PyQt4 flags
+dnl
+dnl The normal python routine returns the sip flags from the PyQt4 package,
+dnl however, if these need to be adapted to fit a certain configuration, this
+dnl can be done by setting the proper flags
+dnl
+AC_ARG_WITH(
+	[pyqt4-flags],
+	[AS_HELP_STRING(
+		[--with-pyqt4-flags=PYQT4_FLAGS],
+		[to specify what flags SIP should be using for PyQt4])],
+	[PYQT4_FLAGS=${withval}],
+	[PYQT4_FLAGS=`$PYTHON -c "$ac_py_import; print $ac_py_pyqt_sip_flags"`])
+
+dnl
+dnl ---- Override options for PyQt4 SIP directory
+dnl
+dnl The normal python routine returns the directory where the PyQt4 SIP files
+dnl are. If for some reason these are not correct, it should be possible to
+dnl override this behavior.
+
+AC_ARG_WITH(
+	[pyqt4-dir],
+	[AS_HELP_STRING(
+		[--with-pyqt4-dir=PYQT4_DIR],
+		[to specify in which directory PyQt4's SIP module files]
+		[are installed])],
+	[PYQT4_DIR=${withval}],
+	[PYQT4_DIR=`$PYTHON -c "$ac_py_import; print $ac_py_pyqt_sip_dir"`])
+
+SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file \
+	      -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
 
 AC_SUBST(SIP_RUN, $SIP_RUN)
 
