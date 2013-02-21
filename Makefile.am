@@ -67,10 +67,8 @@ libqgismobility_la_SOURCES = \
 	@top_builddir@/sip/generated/almagation.cpp
 
 
-libqgismobility_la_CPPFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include -I$(top_srcdir)/include/generated \
-	$(SIP_CPPFLAGS)
-libqgismobility_la_CXXFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include -I$(top_srcdir)/include/generated \
-	$(SIP_CPPFLAGS)
+libqgismobility_la_CPPFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include $(SIP_CPPFLAGS)
+libqgismobility_la_CXXFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include $(SIP_CPPFLAGS)
 libqgismobility_la_LIBADD = $(DEPS_LIBS)
 
 # Only build executables if we enabled the option during configuration
@@ -93,18 +91,36 @@ endif
 @top_builddir@/main/generated/moc_%.cpp: @top_srcdir@/include/%.h @top_srcdir@/main/%.cpp
 	$(MOC_V) @QT_BINARY_PATH@/moc $< -o $@
 
-sip: $(top_srcdir)/sip/*.sip Makefile
-	$(ECHO_V) mkdir -p $(SIPTEMP_DIR)
-	$(ECHO_V) rm -rf $(SIPTEMP_DIR)/*.cpp
-	$(ECHO_V) rm -rf $(SIPTEMP_DIR)/*.h
-	$(SIP_V) @SIP_RUN@
-	$(SIPCAT_V) cat $(SIPTEMP_DIR)/*.cpp > $(SIPTEMP_DIR)/almagation.cpp
+#
+# If any of the sip files is newer than the almagation, the almagation should be
+# generated, otherwise, leave it alone.
+#
+sip: $(top_srcdir)/sip/*.sip $(top_builddir)/Makefile
+	@echo -n ;( should_sip="" ; \
+	  if test -f $(SIPTEMP_DIR)/almagation.cpp ; then \
+	    for file_name in `ls $(top_srcdir)/sip/*.sip` ; do \
+	      if test `stat -c %Y $$file_name` -gt `stat -c %Y $(SIPTEMP_DIR)/almagation.cpp`; then \
+	        echo "  SIP    $$file_name has changed" ; \
+	        should_sip="t" ; \
+	      fi \
+	    done ; \
+	  else \
+	    echo "  SIP    No almagation file found" ; \
+	    should_sip="t" ; \
+	  fi ; \
+	  if test x$$should_sip != x ; then \
+	    mkdir -p $(SIPTEMP_DIR) ; \
+	    rm -rf $(SIPTEMP_DIR)/*.cpp ; \
+	    rm -rf $(SIPTEMP_DIR)/*.h ; \
+	    echo "  SIP    $< > $@" ; \
+	    @SIP_RUN@ ; \
+	    cat $(SIPTEMP_DIR)/*.cpp > $(SIPTEMP_DIR)/almagation.cpp ; \
+	  fi )
 
 @top_builddir@/sip/generated/almagation.cpp: sip
 
 clean-local:
 	@echo "  RM      $(QTEMP_DIR)/*" ; rm -rf $(top_srcdir)/main/generated/*
-	@echo "  RM      $(QITEMP_DIR)/*" ; rm -rf $(top_srcdir)/include/generated/*
 	@echo "  RM      $(SIPTEMP_DIR)/*.cpp"; rm -rf $(SIPTEMP_DIR)/*.cpp
 	@echo "  RM      $(SIPTEMP_DIR)/*.h"; rm -rf $(SIPTEMP_DIR)/*.h
 
