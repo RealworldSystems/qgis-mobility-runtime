@@ -125,8 +125,8 @@ clean-local:
 	@echo "  RM      $(SIPTEMP_DIR)/*.h"; rm -rf $(SIPTEMP_DIR)/*.h
 
 
-install-exec-am: install-qgsmsystem
-uninstall-exec-am: uninstall-qgsmsystem
+install-exec-hook: install-qgsmsystem
+uninstall-hook: uninstall-qgsmsystem
 
 
 install-qgsmsystem:
