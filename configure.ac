@@ -431,7 +431,7 @@ QT_LIBS="-lQtGui -lQtCore -lQtXml -lQtDeclarative"
 
 dnl TODO Need to find wais to do autoconf checks on -lz and -lm
 
-EXT_LIBS="$LIB_DIRS $QT_LIBS -lz -lm $X_LIBS $X_EXTRA_LIBS"
+EXT_LIBS="$QT_LIBS -lz -lm $LIB_DIRS $X_LIBS $X_EXTRA_LIBS"
 EXT_INCLUDES="$QT_INCLUDES -I$QGIS_INCLUDE_PATH -I$PYTHON_INCLUDE_PATH"
 EXT_FLAGS="$X_CFLAGS -DQT_CORE_LIB -DQT_SHARED -DCORE_EXPORT= -DGUI_EXPORT="
 
@@ -439,13 +439,15 @@ AC_SUBST(QT_BINARY_PATH, $QT_BINARY_PATH)
 AC_SUBST(EXT_LIBS, $EXT_LIBS)
 AC_SUBST(PLUGIN_DIR, $PLUGIN_DIR)
 AC_SUBST(PYTHON_INCLUDE, $PYTHON_INCLUDE)
+#AC_SUBST(QT_LIBS, $QT_LIBS)
 
 export INCLUDES="$INCLUDES $EXT_INCLUDES"
 export PATH="$PATH:$QT_BINARY_PATH"
-export CXXFLAGS="$CXXFLAGS $EXT_INCLUDES $EXT_LIBS $EXT_FLAGS"
+export CXXFLAGS="$CXXFLAGS $EXT_INCLUDES $EXT_FLAGS"
+export LDFLAGS="$LDFLAGS"
 export LIBS="$LIBS $EXT_LIBS"
-export LDFLAGS="$LDFLAGS $EXT_LIBS"
 
+export LD_RUN_PATH=$QT_LIBRARY_PATH
 
 AC_CHECK_LIB(
 	[qgis_core], [GEOPROJ4], ,
@@ -498,14 +500,14 @@ if test x"$ac_status" != x0; then
 fi
 AC_MSG_RESULT(yes)
 AC_MSG_CHECKING(can I compile moc_myqt.cpp?)
-bnv_try_2="$CXX -c $CXXFLAGS -o moc_myqt.o moc_myqt.cpp"
+bnv_try_2="$CXX -c $CXXFLAGS $EXTLIBS -o moc_myqt.o moc_myqt.cpp"
 AC_TRY_EVAL(bnv_try_2)
 if test x"$ac_status" != x0; then
    AC_MSG_ERROR(couldn't compile moc_myqt.cpp)
 fi
 AC_MSG_RESULT(yes)
 AC_MSG_CHECKING(can I compile myqt.cpp?)
-bnv_try_3="$CXX $QTINC -c $CXXFLAGS -o myqt.o myqt.cpp"
+bnv_try_3="$CXX $QTINC -c $CXXFLAGS $EXTLIBS -o myqt.o myqt.cpp"
 AC_TRY_EVAL(bnv_try_3)
 if test x"$ac_status" != x0; then
    AC_MSG_ERROR(couldn't compile myqt.cpp)
@@ -527,12 +529,21 @@ fi
 AC_MSG_RESULT(yes)
 rm -f moc_myqt.cpp myqt.h myqt.cpp myqt.o myqt moc_myqt.o
 
-if echo "$host" | grep android >/dev/null ; then
+AC_DEFUN([ANDROID_ME], [dnl
+   echo "This is an Android targetting build"
    AC_DEFINE([ANDROID], [1], [We are targetting an ANDROID device])
-fi
+   export LDFLAGS="$LDFLAGS -avoid-version"   
 
-if echo "$host_alias" | grep android >/dev/null ; then
-   AC_DEFINE([ANDROID], [1], [We are targetting an ANDROID device])
+   AC_CONFIG_COMMANDS(
+	[libtool-rpath-patch],
+	[echo config.status: patching libtool to not use rpath
+	 sed < libtool > libtool-2 's/^hardcode_libdir_flag_spec.*$'/'hardcode_libdir_flag_spec=" -D__LIBTOOL_NO_RPATH__ "/'
+	 mv libtool-2 libtool
+	 chmod 755 libtool])
+])  
+
+if echo "$host $host_alias" | grep android >/dev/null ; then
+   ANDROID_ME
 fi
 
 AC_CONFIG_FILES([Makefile])
