@@ -124,7 +124,9 @@ static inline void preConfigure (int argc, char *argv[])
   checkedImportModule ("preconfig");
 }
 
-
+#if defined (ANDROID)
+#define runtime main
+#endif
 
 int runtime (int argc, char * argv[])
 {
