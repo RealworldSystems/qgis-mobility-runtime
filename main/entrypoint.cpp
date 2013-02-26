@@ -18,10 +18,19 @@
 
 #include "config.h"
 
+#define QGISDEBUG
+
+#include <string.h>
+
 #include <Python.h>
 #include <QDebug>
 #include <QtGui/QMessageBox>
 #include <QtCore/QThread>
+
+#include <QtCore/QStringList>
+#include <QtCore/QLibrary>
+#include <QtCore/QString>
+#include <QtCore/QStringBuilder>
 
 #include <qgsapplication.h>
 #include <qgsproject.h>
@@ -64,12 +73,26 @@ QgsMobilityInitialization (const QString & prefix_path,
   
   // Due to the dependent layout of initialization, the first thing set is the
   // QgsProviderRegistry.
+
+  qDebug() << "Plugin Path: " << plugin_path << "\n";
+  qDebug() << "Prefix Path: " << prefix_path << "\n";
+
   QgsProviderRegistry::instance (plugin_path);
   QgsApplication::setPrefixPath (prefix_path);
   QgsApplication::setPluginPath (plugin_path);
   QgsMapLayerRegistry::instance ();
 
   QgsMobilityWorker::instance ();
+
+  QgsProviderRegistry *reg = QgsProviderRegistry::instance ();
+  QStringList pl = reg->providerList();
+  
+  for (QStringList::iterator iter = pl.begin(); iter != pl.end(); iter++)
+    {
+      qDebug () << *iter << "\n";
+    }
+  
+  qDebug() << QgsProviderRegistry::instance ()->databaseDrivers() << "\n";
 }
 
 static inline QString QgmPyRepr (PyObject *object)
@@ -84,22 +107,23 @@ static inline void QgmPyDebug (PyObject *object)
 {
   if (object == 0)
     {
-      qDebug() << "Object is NULL";
+      qDebug() << "Object is NULL" << "\n";
     }
   else
     {
       if (PyCallable_Check (object))
 	{
-	  qDebug() << "Next object is callable";
+	  qDebug() << "Next object is callable"  << "\n";
 	}
       
-      qDebug() << QgmPyRepr (object);
+      qDebug() << QgmPyRepr (object) << "\n";
     }
 }
 
 
 static inline void checkedImportModule (const char *name)
 {
+  qDebug () << "Attempting import of " << name << "\n";
   PyObject *config_module = PyImport_ImportModule (name);
   PyObject *etype, *evalue, *etraceback;
   PyErr_Fetch (&etype, &evalue, &etraceback);
@@ -117,34 +141,55 @@ static inline void configure (void)
   checkedImportModule ("config.target");
 }
 
-static inline void preConfigure (int argc, char *argv[])
+static inline void preConfigure (void)
 {
-  PySys_SetArgv(argc, argv);
   initqgismobility ();
   checkedImportModule ("preconfig");
 }
-
-#if defined (ANDROID)
-#define runtime main
-#endif
-
 int runtime (int argc, char * argv[])
 {
-  // Given a mobile application, we need to get the following things sorted:
-  // - The Python home path [PYTHONHOME] (where do the normal python things live)
-  // - The Python path [PYTHONPATH] (where do the Qt, QGis, Python and other 
-  //   libraries live)
-  // - The LD_LIBRARY_PATH (where are all necessary plugin libraries)
-  // - The PATH (where can we use certain executables)
-
   QApplication app(argc, argv);
   
-  setenv ("PYTHONPATH", PRECONFIG_PATH, 1);
   setenv ("AUTOCONF_PROJECT_CODE_PATH", PROJECT_CODE_PATH, 1);
 
-  Py_SetProgramName(argv[0]);
+  //Py_SetProgramName(argv[0]);
   Py_Initialize();
-  preConfigure (argc, argv);
+#if defined (ANDROID)
+  char *android_argv[3];
+  android_argv[0] = argv[0];
+  QString prefix_path = "--prefix-path=" % QString(getenv("PREFIX_PATH"));
+  QString plugin_path = "--plugin-path=" % QString(getenv("PLUGIN_PATH"));
+
+  qDebug() << "Prefix Path: " << prefix_path;
+  qDebug() << "Plugin Path: " << plugin_path;
+
+  char *alloca_prefix = new char[prefix_path.size () + 1];
+  char *alloca_plugin = new char[plugin_path.size () + 1];
+
+  memset (alloca_prefix, 0, prefix_path.size () + 1);
+  memset (alloca_plugin, 0, plugin_path.size () + 1);
+
+  QByteArray prefix_ba = prefix_path.toUtf8();
+  QByteArray plugin_ba = plugin_path.toUtf8();
+
+  memcpy(alloca_prefix, prefix_ba.constData (), prefix_path.size ());
+  memcpy(alloca_plugin, plugin_ba.constData (), plugin_path.size ());
+
+  qDebug() << "Allocated Prefix" << QString(alloca_prefix);
+  qDebug() << "Allocated Plugin" << QString(alloca_plugin);
+
+  android_argv[1] = alloca_prefix;
+  android_argv[2] = alloca_plugin;
+  
+  PySys_SetArgv(3, android_argv);
+#else
+  PySys_SetArgv(argc, argv);
+  
+#endif
+  qDebug() << "Estimated python path: " << QString(getenv("PYTHONPATH"));
+  PySys_SetPath(getenv("PYTHONPATH"));
+
+  preConfigure ();
 
   QgsMobilityConfigure config;
   
@@ -152,8 +197,16 @@ int runtime (int argc, char * argv[])
 
   configure ();
 
-  PyRun_InteractiveLoop (stdin, "<stdin>");
-  
+  /*//PyRun_InteractiveLoop (stdin, "<stdin>");
+  */
+  app.exec ();
+
   Py_Finalize();
+
+#if defined (ANDROID)
+  delete alloca_prefix;
+  delete alloca_plugin;
+#endif
+
   return 0;
 }

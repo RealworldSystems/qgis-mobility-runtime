@@ -86,6 +86,20 @@ qgismobility_LDADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
 
 endif
 
+if ANDROID_WRAPPER
+
+# Made for wrapping the runtime function to read parameters and set 
+# the system environment through an XML configuration file.
+
+lib_LTLIBRARIES += libqgismobility_android_wrap.la
+
+libqgismobility_android_wrap_la_SOURCES = \
+	android/qgismobility.cpp
+libqgismobility_android_wrap_la_CPPFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include $(SIP_CPPFLAGS)
+libqgismobility_android_wrap_la_CXXFLAGS = $(DEPS_CFLAGS) -I$(top_srcdir)/include $(SIP_CPPFLAGS)
+libqgismobility_android_wrap_la_LIBADD = $(DEPS_LIBS) $(top_builddir)/libqgismobility.la
+
+endif
 
 
 @top_builddir@/main/generated/moc_%.cpp: @top_srcdir@/include/%.h @top_srcdir@/main/%.cpp

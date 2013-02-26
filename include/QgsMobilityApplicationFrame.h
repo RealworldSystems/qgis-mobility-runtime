@@ -46,10 +46,6 @@ protected:
   int diagonal (void);
 
 private:
-  QGridLayout mainGrid;
-  QWidget mMenuWidget; // should become QML view
-  QWidget mCanvas;
-
   int mRotate;
   QSize mSize;
   QImage mImage;

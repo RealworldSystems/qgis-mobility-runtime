@@ -532,6 +532,7 @@ rm -f moc_myqt.cpp myqt.h myqt.cpp myqt.o myqt moc_myqt.o
 AC_DEFUN([ANDROID_ME], [dnl
    echo "This is an Android targetting build"
    AC_DEFINE([ANDROID], [1], [We are targetting an ANDROID device])
+   export android_wrapper=yes
    export LDFLAGS="$LDFLAGS -avoid-version"   
 
    AC_CONFIG_COMMANDS(
@@ -545,6 +546,10 @@ AC_DEFUN([ANDROID_ME], [dnl
 if echo "$host $host_alias" | grep android >/dev/null ; then
    ANDROID_ME
 fi
+
+dnl Build the android wrapper library code if the android wrapper is
+dnl selected. This is done by the ANDROID_ME function.
+AM_CONDITIONAL(ANDROID_WRAPPER, test x"$android_wrapper" == xyes)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
