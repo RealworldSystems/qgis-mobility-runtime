@@ -83,16 +83,6 @@ QgsMobilityInitialization (const QString & prefix_path,
   QgsMapLayerRegistry::instance ();
 
   QgsMobilityWorker::instance ();
-
-  QgsProviderRegistry *reg = QgsProviderRegistry::instance ();
-  QStringList pl = reg->providerList();
-  
-  for (QStringList::iterator iter = pl.begin(); iter != pl.end(); iter++)
-    {
-      qDebug () << *iter << "\n";
-    }
-  
-  qDebug() << QgsProviderRegistry::instance ()->databaseDrivers() << "\n";
 }
 
 static inline QString QgmPyRepr (PyObject *object)
@@ -146,6 +136,29 @@ static inline void preConfigure (void)
   initqgismobility ();
   checkedImportModule ("preconfig");
 }
+
+#if defined (ANDROID)
+
+class AndroidTCPConsoleThread : public QThread
+{
+public:
+  void run (void)
+  {
+    checkedImportModule ("interactivenetconsole.boot");
+  }
+};
+
+static AndroidTCPConsoleThread *a_thread;
+
+static inline void run_interactivenetconsole (void)
+{
+  a_thread = new AndroidTCPConsoleThread();
+  a_thread->start();
+}
+
+#endif
+
+
 int runtime (int argc, char * argv[])
 {
   QApplication app(argc, argv);
@@ -188,6 +201,7 @@ int runtime (int argc, char * argv[])
 #endif
   qDebug() << "Estimated python path: " << QString(getenv("PYTHONPATH"));
   PySys_SetPath(getenv("PYTHONPATH"));
+  PyEval_InitThreads();
 
   preConfigure ();
 
@@ -197,8 +211,9 @@ int runtime (int argc, char * argv[])
 
   configure ();
 
-  /*//PyRun_InteractiveLoop (stdin, "<stdin>");
-  */
+#if defined (ANDROID)
+  run_interactivenetconsole (); /* this will run app.exec */
+#endif
   app.exec ();
 
   Py_Finalize();
@@ -209,4 +224,5 @@ int runtime (int argc, char * argv[])
 #endif
 
   return 0;
+
 }

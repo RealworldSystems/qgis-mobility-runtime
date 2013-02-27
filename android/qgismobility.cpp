@@ -110,7 +110,6 @@ static void initialize_environ (const QString &base_path)
   setenv_from_qstring ("PYTHONHOME", python_home_path);
   
   QString ld_library_path = 
-    files_path % ":" %
     python_home_path % "/lib" % ":" %
     "/system/lib" % ":" %
     "/data/data/org.kde.necessitas.ministro/qt/lib";
