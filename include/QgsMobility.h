@@ -32,6 +32,7 @@ public:
   QString load_project (QString);
   bool rotate (int);
   int rotation (void);
+  qreal azimuth (void) const;
 };
 
 #endif // _QGS_MOBILITY_H

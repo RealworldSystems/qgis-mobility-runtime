@@ -18,6 +18,13 @@
 
 %Module(name=qgismobility, version=0)
 
+%Platforms {ANDROID}
+
+%If (ANDROID)
+    typedef qint64 Q_PID;
+%End
+
+
 %Import QtCore/QtCoremod.sip
 
 %If (Qt_4_2_0 -)

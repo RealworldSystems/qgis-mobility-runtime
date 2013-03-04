@@ -117,7 +117,6 @@ AC_ARG_WITH(
 	[QT_BINARY_PATH="$withval"],
 	[])
 
-
 dnl ==== QGIS ====
 dnl
 dnl We need to determine where QT is hanging out.
@@ -228,7 +227,6 @@ AC_ARG_WITH(
 		[to specify the name of the library, default: python2.7]),
 	[PYTHON_LIBRARY="$withval"],
 	[])
-
 
 dnl
 dnl ---- Python include path ----
@@ -409,10 +407,8 @@ AC_ARG_WITH(
 	[PYQT4_DIR=${withval}],
 	[PYQT4_DIR=`$PYTHON -c "$ac_py_import; print $ac_py_pyqt_sip_dir"`])
 
-SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file \
-	      -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
 
-AC_SUBST(SIP_RUN)
+SIP_FEATURES=
 
 AC_PATH_XTRA
 
@@ -427,7 +423,7 @@ QT_INCLUDES="\
 	-I$QT_INCLUDE_PATH/QtDeclarative"
 
 dnl TODO Need to find ways to do autoconf checks on these
-QT_LIBS="-lQtGui -lQtCore -lQtXml -lQtDeclarative"
+QT_LIBS="-lQtGui -lQtCore -lQtXml -lQtDeclarative -lQtSensors"
 
 dnl TODO Need to find wais to do autoconf checks on -lz and -lm
 
@@ -529,6 +525,7 @@ fi
 AC_MSG_RESULT(yes)
 rm -f moc_myqt.cpp myqt.h myqt.cpp myqt.o myqt moc_myqt.o
 
+
 AC_DEFUN([ANDROID_ME], [dnl
    echo "This is an Android targetting build"
    AC_DEFINE([ANDROID], [1], [We are targetting an ANDROID device])
@@ -545,11 +542,17 @@ AC_DEFUN([ANDROID_ME], [dnl
 
 if echo "$host $host_alias" | grep android >/dev/null ; then
    ANDROID_ME
+   SIP_FEATURES="-t ANDROID"
 fi
 
 dnl Build the android wrapper library code if the android wrapper is
 dnl selected. This is done by the ANDROID_ME function.
 AM_CONDITIONAL(ANDROID_WRAPPER, test x"$android_wrapper" == xyes)
+
+SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file $SIP_FEATURES \
+	      -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
+
+AC_SUBST(SIP_RUN)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

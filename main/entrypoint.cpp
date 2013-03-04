@@ -142,6 +142,11 @@ static inline void preConfigure (void)
 class AndroidTCPConsoleThread : public QThread
 {
 public:
+  AndroidTCPConsoleThread (void)
+  {
+    this->setTerminationEnabled (true);
+  }
+  
   void run (void)
   {
     checkedImportModule ("interactivenetconsole.boot");
@@ -152,8 +157,19 @@ static AndroidTCPConsoleThread *a_thread;
 
 static inline void run_interactivenetconsole (void)
 {
-  a_thread = new AndroidTCPConsoleThread();
-  a_thread->start();
+  
+  a_thread = new AndroidTCPConsoleThread ();
+  a_thread->start ();
+
+  /*  QObject::connect(QApplication::instance(), SIGNAL (aboutToQuit ()),
+      a_thread, SLOT (terminate ()));*/
+}
+
+static inline void quit_interactivenetconsole (void)
+{
+  a_thread->quit ();
+  a_thread->wait ();
+  delete a_thread;
 }
 
 #endif
@@ -212,10 +228,13 @@ int runtime (int argc, char * argv[])
   configure ();
 
 #if defined (ANDROID)
-  run_interactivenetconsole (); /* this will run app.exec */
+  run_interactivenetconsole ();
 #endif
   app.exec ();
-
+  
+#if defined (ANDROID)
+  quit_interactivenetconsole ();
+#endif
   Py_Finalize();
 
 #if defined (ANDROID)
