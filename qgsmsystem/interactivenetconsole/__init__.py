@@ -52,6 +52,9 @@ class InteractiveNetConsoleServer:
                 sys.stderr = string_io
                 try:
                     self.__IC.runcode(self, code)
+                except SystemExit, ex:
+                    # This exception is handled transparently
+                    self.__socket.close()
                 finally:
                     sys.stdout = sys.__stdout__
                     sys.stderr = sys.__stderr__
