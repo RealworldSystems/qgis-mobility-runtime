@@ -41,6 +41,7 @@
 #include <QgsMobilityConfigure.h>
 #include <QgsMobilityWorker.h>
 
+#include <QgsMobilityQMLMap.h>
 
 PyMODINIT_FUNC initqgismobility (void);
 
@@ -49,9 +50,9 @@ static inline void
 QgsMobilityInitialization (const QString & prefix_path,
 			   const QString & plugin_path);
 
-static inline void checkedImportModule (const char *name);
+static inline void checkedImportModule (const char *name, bool decref = true);
 static inline void configure (void);
-static inline void preConfigure (int argc, char *argv[]);
+static inline void preConfigure (void);
 
 /*
  * The initialization routine is responsible for delegating the necessary
@@ -111,7 +112,7 @@ static inline void QgmPyDebug (PyObject *object)
 }
 
 
-static inline void checkedImportModule (const char *name)
+static inline void checkedImportModule (const char *name, bool decref)
 {
   qDebug () << "Attempting import of " << name << "\n";
   PyObject *config_module = PyImport_ImportModule (name);
@@ -123,7 +124,10 @@ static inline void checkedImportModule (const char *name)
       QgmPyDebug (etraceback);
     }
 
-  Py_XDECREF (config_module);
+  if (decref)
+    {
+      Py_XDECREF (config_module);
+    }
 }
 
 static inline void configure (void)
@@ -139,27 +143,11 @@ static inline void preConfigure (void)
 
 #if defined (ANDROID)
 
-class AndroidTCPConsoleThread : public QThread
-{
-public:
-  AndroidTCPConsoleThread (void)
-  {
-    this->setTerminationEnabled (true);
-  }
-  
-  void run (void)
-  {
-    checkedImportModule ("interactivenetconsole.boot");
-  }
-};
-
-static AndroidTCPConsoleThread *a_thread;
-
 static inline void run_interactivenetconsole (void)
 {
-  
-  a_thread = new AndroidTCPConsoleThread ();
-  a_thread->start ();
+  checkedImportModule ("interactivenetconsole.boot", false);
+   //a_thread = new AndroidTCPConsoleThread ();
+   //a_thread->start ();
 
   /*  QObject::connect(QApplication::instance(), SIGNAL (aboutToQuit ()),
       a_thread, SLOT (terminate ()));*/
@@ -167,9 +155,9 @@ static inline void run_interactivenetconsole (void)
 
 static inline void quit_interactivenetconsole (void)
 {
-  a_thread->quit ();
-  a_thread->wait ();
-  delete a_thread;
+  //a_thread->quit ();
+  //a_thread->wait ();
+  //delete a_thread;
 }
 
 #endif
@@ -178,6 +166,8 @@ static inline void quit_interactivenetconsole (void)
 int runtime (int argc, char * argv[])
 {
   QApplication app(argc, argv);
+
+  qmlRegisterType <QgsMobilityQMLMap> ("QgsMobility", 1, 0, "Map");
   
   setenv ("AUTOCONF_PROJECT_CODE_PATH", PROJECT_CODE_PATH, 1);
 

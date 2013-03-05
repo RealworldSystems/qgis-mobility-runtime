@@ -22,11 +22,16 @@ bool QgsMobilityPainter::begin (QPaintDevice *device)
 {
   if (QPainter::begin (device))
     { 
-      this->setRenderHint(QPainter::Antialiasing, true);
-      this->setRenderHint(QPainter::HighQualityAntialiasing, true);
-      this->setRenderHint(QPainter::SmoothPixmapTransform, true);
+      QgsMobilityPainter::setMobilityRenderHints (this);
       return true;
     }
   else
     { return false; }
+}
+
+void QgsMobilityPainter::setMobilityRenderHints (QPainter *paint)
+{
+  paint->setRenderHint (QPainter::Antialiasing, true);
+  paint->setRenderHint (QPainter::HighQualityAntialiasing, true);
+  paint->setRenderHint (QPainter::SmoothPixmapTransform, true);
 }

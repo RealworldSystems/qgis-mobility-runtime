@@ -22,41 +22,25 @@
 #include <QtCore/QFileInfo>
 
 #include <QgsMobility.h>
-#include <QgsMobilityApplicationFrame.h>
-#include <QgsMobilityWorker.h>
-
 #include <qgsproject.h>
 
-static QgsMobilityApplicationFrame *frame = 0;
 
-static void removeApplicationFrame (void)
+static QgsMobility * instance = 0;
+
+
+QgsMobility * QgsMobility::instance (void)
 {
-  if (::frame != 0) delete ::frame;
+  if (::instance == 0)
+    {
+      ::instance = new QgsMobility ();
+    }
+  return ::instance;
 }
 
 QgsMobility::QgsMobility (void)
 {
-  if (::frame == 0)
-    {
-      ::frame = new QgsMobilityApplicationFrame;
-      ::frame->setWindowFlags(Qt::FramelessWindowHint);
-      atexit (removeApplicationFrame);
-    }
 }
 
-bool QgsMobility::show_main_window_stack (void)
-{
-  if (::frame == 0) return false;
-  ::frame->showFullScreen ();
-  return true;
-}
-
-bool QgsMobility::hide_main_window_stack (void)
-{ 
-  if (::frame == 0) return false;
-  ::frame->hide ();
-  return true;
-}
 
 QString QgsMobility::load_project (QString projectfile)
 {
@@ -68,14 +52,12 @@ QString QgsMobility::load_project (QString projectfile)
 }
 
 
-bool QgsMobility::rotate (int rotation)
+int QgsMobility::rotate (int rotation)
 {
-  if (::frame == 0) return false;
-  ::frame->rotate (rotation);
-  return true;
-}
+  rotation = rotation % 360;
+  if (rotation > 180) { rotation -= 360; }
+  if (rotation <= -180) { rotation += 360; }
 
-int QgsMobility::rotation (void)
-{
-  return ::frame->rotation ();
+  emit rotateView (rotation);
+  return rotation;
 }

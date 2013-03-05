@@ -25,14 +25,19 @@ class QgsMobility : public QObject
 {
   Q_OBJECT
   
-public:
+private:
   QgsMobility (void);
-  bool show_main_window_stack (void);
-  bool hide_main_window_stack (void);
+
+public:
   QString load_project (QString);
-  bool rotate (int);
-  int rotation (void);
-  qreal azimuth (void) const;
+  int rotate (int);
+    
+  static QgsMobility * instance (void);
+
+signals:
+  void rotateView (int rotation);
+
+
 };
 
 #endif // _QGS_MOBILITY_H

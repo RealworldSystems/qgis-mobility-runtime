@@ -4,7 +4,7 @@ from PyQt4.QtCore import qDebug
 from PyQt4.QtGui  import QApplication
 import asyncore
 
-incs = INCS(('localhost', 6543))
+incs = INCS(('localhost', 7654))
 
 class AsyncoreQtBridge(QObject):
     def __init__(self):
@@ -12,11 +12,11 @@ class AsyncoreQtBridge(QObject):
     
     @pyqtSlot()
     def pull(self):
-        asyncore.loop(timeout=1, count=1)
+        asyncore.loop(timeout=0.010, count=1)
 
 
 timer = QTimer()
-timer.setInterval(30)
+timer.setInterval(0)
 
 bridge = AsyncoreQtBridge()
 
@@ -25,5 +25,5 @@ QObject.connect(timer, SIGNAL('timeout()'), bridge, SLOT('pull()'))
 
 timer.start()
 
-eventLoop = QEventLoop()
-eventLoop.exec_()
+#eventLoop = QEventLoop()
+#eventLoop.exec_()

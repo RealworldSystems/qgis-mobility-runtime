@@ -26,6 +26,7 @@ class QgsMobilityPainter : public QPainter
 {
 public:
   bool begin (QPaintDevice *);
+  static void setMobilityRenderHints (QPainter *);
 };
 
 #endif // _QGS_MOBILITY_PAINTER_H

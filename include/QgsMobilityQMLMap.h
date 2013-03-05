@@ -17,32 +17,29 @@
  */
 
 
-#if !defined (MY_TEST_WINDOW_H)
-#define MY_TEST_WINDOW_H
-
-#include <QList>
+#if !defined (_QGS_MOBILITY_QML_MAP)
+#define _QGS_MOBILITY_QML_MAP
 
 #include <QtCore/QMutex>
-#include <QtGui/QWidget>
-#include <QtGui/QMainWindow>
-#include <QtGui/QGridLayout>
+#include <QtDeclarative/QDeclarativeItem>
 
-class QgsMobilityApplicationFrame : public QMainWindow
+class QgsMobilityQMLMap : public QDeclarativeItem
 {
 Q_OBJECT
 
 public slots:
   void retrieveImage (const QImage &);
-
-public:
-  QgsMobilityApplicationFrame (void);
-  void paintEvent (QPaintEvent *);
-  const QSize & renderSize (void);
   void rotate (int);
-  int rotation (void);
+  
+public:
+  QgsMobilityQMLMap (void);
+  void paint (QPainter *, const QStyleOptionGraphicsItem *, QWidget *);
+  const QSize & renderSize (void);
+
 
 protected:
-  void resizeEvent (QResizeEvent *);
+  void geometryChanged (const QRectF &, const QRectF &);
+  //void resizeEvent (QResizeEvent *);
   int diagonal (void);
 
 private:

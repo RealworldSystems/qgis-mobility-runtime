@@ -16,81 +16,93 @@
  *  <http://www.gnu.org/licenses/>.
  */
 
+#include <QgsMobilityQMLMap.h>
 #include <QgsMobilityPainter.h>
-#include <QgsMobilityApplicationFrame.h>
 #include <QgsMobilityWorker.h>
+#include <QgsMobility.h>
 
-#include <QString>
+#include <QtCore/QString>
 #include <QtCore/qmath.h>
 #include <QtCore/QMutexLocker>
-#include <QTransform>
+#include <QtGui/QTransform>
+#include <QtGui/QPainter>
 
-QgsMobilityApplicationFrame::QgsMobilityApplicationFrame (void) : 
-  QMainWindow (),
-  mRotate (0)
+#include <QtCore/QDebug>
+
+
+QgsMobilityQMLMap::QgsMobilityQMLMap (void) : 
+  QDeclarativeItem (),
+  mRotate (0),
+  mMutex (QMutex::Recursive)
 {
+  //setCacheMode (QGraphicsItem::DeviceCoordinateCache);
+  setFlag (QGraphicsItem::ItemHasNoContents, false);
+  
   connect (&(QgsMobilityWorker::instance ()), SIGNAL (ready (const QImage &)),
 	   this, SLOT (retrieveImage (const QImage &)));
+
+  connect (QgsMobility::instance (), SIGNAL (rotateView (int)),
+	   this, SLOT (rotate (int)));
 }
 
-QImage QgsMobilityApplicationFrame::copyImage (void)
+QImage QgsMobilityQMLMap::copyImage (void)
 {
   QMutexLocker locker (&this->mMutex);
   return this->mImage;
 }
 
-void QgsMobilityApplicationFrame::retrieveImage (const QImage &image)
+void QgsMobilityQMLMap::retrieveImage (const QImage &image)
 {
   QMutexLocker locker (&this->mMutex);
   this->mImage = image;
-  this->update ();
+  qDebug() << "Call Update";
+  this->update (this->boundingRect ());
+  
 }
 
-void QgsMobilityApplicationFrame::rotate (int rotation)
+void QgsMobilityQMLMap::rotate (int rotation)
 {
+  QMutexLocker locker (&this->mMutex);
   mRotate = rotation;
-  this->update();
+  this->update (this->boundingRect ());
 }
 
-int QgsMobilityApplicationFrame::rotation (void)
-{
-  return mRotate;
-}
-
-void QgsMobilityApplicationFrame::resizeEvent (QResizeEvent *)
+void QgsMobilityQMLMap::geometryChanged (const QRectF & n, const QRectF &)
 {
   int diagonal = this->diagonal ();
-  QSize size(diagonal, diagonal);
-  QgsMobilityWorker::instance().setSize(size);
+  QgsMobilityWorker::instance().setSize(QSize(diagonal, diagonal));
 }
 
-int QgsMobilityApplicationFrame::diagonal (void)
+int QgsMobilityQMLMap::diagonal (void)
 {
-  int screen_width = this->size().width();
-  int screen_height = this->size().height();
+  QMutexLocker locker (&this->mMutex);
+
+  QRectF bounds = this->boundingRect ();
+  int screen_width = bounds.width ();
+  int screen_height = bounds.height ();
 
   return (int) qCeil (qSqrt ((screen_width * screen_width) +
 			     (screen_height * screen_height)));
   
 }
 
-void QgsMobilityApplicationFrame::paintEvent (QPaintEvent *event)
+void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *, QWidget *)
 {
   
   QImage image = this->copyImage ();
+  QRectF bounds = this->boundingRect ();
+  int diagonal = this->diagonal ();
+  qDebug() << "diagonal: " << QString::number (diagonal);
+  
+  QgsMobilityPainter::setMobilityRenderHints (paint);
  
-  int diagonal = this->diagonal();
-  
-  QgsMobilityPainter paint;
-  paint.begin (this);
-  
   QTransform transform;
 
-  int height_of_window = this->size().height();
+  int height_of_window = bounds.height ();
   int height_delta = diagonal - height_of_window;
   int shift_up = height_delta / 2;
 
-  int width_of_window = this->size().width();
+  int width_of_window = bounds.width ();
   int width_delta = diagonal - width_of_window;
   int shift_left = width_delta / 2;
 
@@ -99,8 +111,7 @@ void QgsMobilityApplicationFrame::paintEvent (QPaintEvent *event)
   transform.rotate(mRotate);
   transform.translate(- (diagonal / 2), - (diagonal / 2));
   
-  paint.setTransform(transform);
-  paint.drawImage (0, 0, image);
+  paint->setTransform(transform);
+  paint->drawImage (0, 0, image);
   
-  paint.end ();
 }

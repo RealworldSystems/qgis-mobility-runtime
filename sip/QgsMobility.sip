@@ -22,11 +22,11 @@ class QgsMobility : public QObject
 #include "../include/QgsMobility.h"
 %End
 
-public:
+private:
   QgsMobility ();
-  bool show_main_window_stack ();
-  bool hide_main_window_stack ();
+
+public:
   QString load_project (QString);
-  bool rotate (int);
-  int rotation ();
+  int rotate (int);
+  static QgsMobility * instance ();
 };

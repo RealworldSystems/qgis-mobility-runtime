@@ -54,11 +54,11 @@ RM_V_0 = @echo "  REMOVE $@";
 
 lib_LTLIBRARIES += libqgismobility.la
 libqgismobility_la_SOURCES = \
-	@top_builddir@/main/generated/moc_QgsMobilityApplicationFrame.cpp \
+	@top_builddir@/main/generated/moc_QgsMobilityQMLMap.cpp \
 	@top_builddir@/main/generated/moc_QgsMobilityConfigure.cpp \
 	@top_builddir@/main/generated/moc_QgsMobility.cpp \
 	@top_builddir@/main/generated/moc_QgsMobilityWorker.cpp \
-	main/QgsMobilityApplicationFrame.cpp \
+	main/QgsMobilityQMLMap.cpp \
         main/entrypoint.cpp \
 	main/QgsMobilityConfigure.cpp \
 	main/QgsMobility.cpp \
