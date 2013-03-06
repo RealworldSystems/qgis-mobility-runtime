@@ -61,3 +61,16 @@ int QgsMobility::rotate (int rotation)
   emit rotateView (rotation);
   return rotation;
 }
+
+bool QgsMobility::panByPixels (int start_x, int start_y, int end_x, int end_y)
+{
+  if (start_x != end_x || start_y != end_y)
+    {
+      emit panMapByPixels (start_x, start_y, end_x, end_y);
+      return true;
+    }
+  else
+    {
+      return false;
+    }
+}

@@ -21,28 +21,90 @@
 #include <QgsMobilityWorker.h>
 #include <QgsMobility.h>
 
+
+#include <Qt>
+
 #include <QtCore/QString>
 #include <QtCore/qmath.h>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QPointF>
 #include <QtGui/QTransform>
 #include <QtGui/QPainter>
+#include <QtGui/QGraphicsSceneMouseEvent>
 
 #include <QtCore/QDebug>
 
+#include <complex>
+
+static const qreal PI = 2 * qAcos(0.0);
 
 QgsMobilityQMLMap::QgsMobilityQMLMap (void) : 
   QDeclarativeItem (),
   mRotate (0),
+  mMouseMovePoint (0, 0),
   mMutex (QMutex::Recursive)
 {
   //setCacheMode (QGraphicsItem::DeviceCoordinateCache);
   setFlag (QGraphicsItem::ItemHasNoContents, false);
+  setFlag (QGraphicsItem::ItemIsMovable, true);
+  setSmooth (true);
   
   connect (&(QgsMobilityWorker::instance ()), SIGNAL (ready (const QImage &)),
 	   this, SLOT (retrieveImage (const QImage &)));
 
   connect (QgsMobility::instance (), SIGNAL (rotateView (int)),
 	   this, SLOT (rotate (int)));
+
+  setAcceptedMouseButtons (Qt::LeftButton | Qt::MidButton | Qt::RightButton);
+  setAcceptTouchEvents (true);
+  setAcceptHoverEvents (true);
+}
+
+qreal QgsMobilityQMLMap::counterCornerPolar (void)
+{
+  return 0.0 - (((qreal) mRotate) / 180 * PI);
+}
+
+qreal QgsMobilityQMLMap::counterScreenOffset (int range)
+{
+  int diagonal = this->diagonal ();
+  return ((qreal)diagonal - (qreal)range / 2);
+}
+
+
+QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
+{
+  QRectF bounds = this->boundingRect ();
+  return QPointF (this->counterScreenOffset (bounds.width ()) + viewport.x (),
+		  this->counterScreenOffset (bounds.height ()) + viewport.y ());
+}
+
+void QgsMobilityQMLMap::mouseMoveEvent (QGraphicsSceneMouseEvent *event)
+{
+  mMouseMovePoint = (event->pos () - event->buttonDownPos (Qt::LeftButton));
+  this->update ();
+}
+
+
+
+void QgsMobilityQMLMap::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
+{
+  mMouseMovePoint.setX(0);
+  mMouseMovePoint.setY(0);
+  QPointF current = this->counterViewportOffset (event->pos ());
+  QPointF start = this->counterViewportOffset (event->buttonDownPos (Qt::LeftButton));
+  qreal corner = this->counterCornerPolar ();
+
+  std::complex<qreal> correction_factor (qCos (corner), qSin (corner));
+  std::complex<qreal> start_complex = 
+    std::complex<qreal> (start.x (), start.y ()) * correction_factor;
+  std::complex<qreal> current_complex = 
+    std::complex<qreal> (current.x (), current.y ()) * correction_factor;
+  
+  QgsMobility::instance()->panByPixels (start_complex.real (), 
+					start_complex.imag (),
+					current_complex.real (),
+					current_complex.imag ());
 }
 
 QImage QgsMobilityQMLMap::copyImage (void)
@@ -55,7 +117,6 @@ void QgsMobilityQMLMap::retrieveImage (const QImage &image)
 {
   QMutexLocker locker (&this->mMutex);
   this->mImage = image;
-  qDebug() << "Call Update";
   this->update (this->boundingRect ());
   
 }
@@ -90,12 +151,12 @@ void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *
 {
   
   QImage image = this->copyImage ();
+
+  qDebug() << "Painting the image...";
+
   QRectF bounds = this->boundingRect ();
   int diagonal = this->diagonal ();
-  qDebug() << "diagonal: " << QString::number (diagonal);
   
-  QgsMobilityPainter::setMobilityRenderHints (paint);
- 
   QTransform transform;
 
   int height_of_window = bounds.height ();
@@ -112,6 +173,6 @@ void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *
   transform.translate(- (diagonal / 2), - (diagonal / 2));
   
   paint->setTransform(transform);
-  paint->drawImage (0, 0, image);
+  paint->drawImage (mMouseMovePoint.x (), mMouseMovePoint.y (), image);
   
 }

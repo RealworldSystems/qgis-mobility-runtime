@@ -31,12 +31,13 @@ private:
 public:
   QString load_project (QString);
   int rotate (int);
+  bool panByPixels (int start_x, int start_y, int end_x, int end_y);
     
   static QgsMobility * instance (void);
 
 signals:
   void rotateView (int rotation);
-
+  void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
 
 };
 

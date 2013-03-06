@@ -21,6 +21,7 @@
 #define _QGS_MOBILITY_QML_MAP
 
 #include <QtCore/QMutex>
+#include <QtCore/QEvent>
 #include <QtDeclarative/QDeclarativeItem>
 
 class QgsMobilityQMLMap : public QDeclarativeItem
@@ -39,16 +40,21 @@ public:
 
 protected:
   void geometryChanged (const QRectF &, const QRectF &);
-  //void resizeEvent (QResizeEvent *);
   int diagonal (void);
-
+  void mouseMoveEvent (QGraphicsSceneMouseEvent *);
+  void mouseReleaseEvent (QGraphicsSceneMouseEvent *);
 private:
   int mRotate;
   QSize mSize;
   QImage mImage;
   QMutex mMutex;
-  
+  QPointF mMouseMovePoint;
+
   QImage copyImage (void);
+  qreal counterCornerPolar (void);
+  QPointF counterViewportOffset (const QPointF & viewport);
+  qreal counterScreenOffset (int range);
+  
 };
   
 #endif

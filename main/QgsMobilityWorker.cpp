@@ -20,10 +20,12 @@
 
 #include <QgsMobilityWorker.h>
 #include <QgsMobilityPainter.h>
+#include <QgsMobility.h>
 
 #include <QtCore/QMutexLocker>
 #include <QtCore/QStringList>
 #include <QtXml/QDomNodeList>
+#include <QtCore/QDebug>
 
 static QgsMobilityProjectWorker *projectWorker_p = 0;
 static QgsMobilityWorker *worker_p = 0;
@@ -71,6 +73,10 @@ void QgsMobilityWorker::init (void)
   connect (QgsProject::instance(), SIGNAL (readProject (const QDomDocument &)),
 	   ::projectWorker_p,      SLOT (readProject (const QDomDocument &)));
 
+  connect (QgsMobility::instance(), SIGNAL (panMapByPixels (int, int, int, int)),
+	   ::projectWorker_p,       SLOT (panMapByPixels (int, int, int, int)));
+
+
   connect (&(this->mThread), SIGNAL (started ()), 
 	   this,             SLOT (doWork ()));
   
@@ -78,21 +84,70 @@ void QgsMobilityWorker::init (void)
   this->mThread.start ();
 }
 
+QgsMapRenderer &QgsMobilityProjectWorker::renderer (void)
+{
+  return this->mWorker_p->mRenderer;
+}
+
+void QgsMobilityProjectWorker::reset (void)
+{
+  return this->mWorker_p->reset ();
+}
+
+
 void QgsMobilityProjectWorker::readProject (const QDomDocument &doc)
 {
   QMutexLocker locker (&(this->mWorker_p->mMutex));
 
-  QgsMapRenderer &renderer = this->mWorker_p->mRenderer;
   QDomNodeList nodes = doc.elementsByTagName( "mapcanvas" );
   if ( nodes.count() )
     {
-      QDomNode node = nodes.item( 0 );
-      renderer.readXML( node );
+      QDomNode node = nodes.item(0);
+      this->renderer().readXML (node);
     }
 
   QStringList list = QgsMapLayerRegistry::instance()->mapLayers().keys();
-  renderer.setLayerSet (list);
-  this->mWorker_p->reset ();
+  this->renderer().setLayerSet (list);
+  this->reset ();
+}
+
+void QgsMobilityProjectWorker::moveExtent (double offset_x, double offset_y)
+{
+  
+  QMutexLocker locker (&(this->mWorker_p->mMutex));
+
+  // Get the old extent and create a new extent based on the old extent using
+  // the given offsets
+  QgsRectangle old_extent = this->renderer().extent();
+  
+  QgsRectangle new_extent (old_extent.xMinimum () - offset_x,
+			   old_extent.yMinimum () - offset_y,
+			   old_extent.xMaximum () - offset_x,
+			   old_extent.yMaximum () - offset_y);
+  
+  // Set the extent of the renderer
+  this->renderer().setExtent (new_extent);
+
+  // Reset the host worker
+  this->reset ();
+}
+
+void QgsMobilityProjectWorker::panMapByPixels (int start_x, int start_y,
+					       int end_x, int end_y)
+{
+  // First transform the given pixels to the coordinates on the map.
+  QgsPoint start = this->renderer().coordinateTransform()->
+    toMapCoordinates (start_x, start_y);
+
+  QgsPoint end = this->renderer().coordinateTransform()->
+    toMapCoordinates (end_x, end_y);
+  
+  // Determine the offsets from start -> end
+  double offset_x = end.x() - start.x();
+  double offset_y = end.y() - start.y();
+  
+  // Move the extent given the offsets
+  this->moveExtent (offset_x, offset_y);
 }
 
 
@@ -108,6 +163,7 @@ void QgsMobilityWorker::reset (void)
   QMutexLocker locker (&(this->mMutex));
   if (!mSemaphore.available ())
     {
+      qDebug() << "Performing Reset";
       mSemaphore.release ();
     }
 }
@@ -131,6 +187,13 @@ void QgsMobilityWorker::doWork (void)
     {
       mSemaphore.acquire ();
       
+  QgsRectangle extent = this->mRenderer.extent();
+
+  qDebug() << "paint extent xmin: " << extent.xMinimum();
+  qDebug() << "paint extent ymin: " << extent.yMinimum();
+  qDebug() << "paint extent xmax: " << extent.xMaximum();
+  qDebug() << "paint extent ymax: " << extent.yMaximum();
+
       /* If halt is set, work is done */
       if (! this->mHalt)
 	{
