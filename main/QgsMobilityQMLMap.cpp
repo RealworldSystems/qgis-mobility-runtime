@@ -152,8 +152,6 @@ void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *
   
   QImage image = this->copyImage ();
 
-  qDebug() << "Painting the image...";
-
   QRectF bounds = this->boundingRect ();
   int diagonal = this->diagonal ();
   
@@ -167,12 +165,12 @@ void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *
   int width_delta = diagonal - width_of_window;
   int shift_left = width_delta / 2;
 
-  transform.translate(- shift_left, - shift_up);
+  transform.translate(- shift_left + mMouseMovePoint.x (), - shift_up + mMouseMovePoint.y ());
   transform.translate(diagonal / 2, diagonal / 2);
   transform.rotate(mRotate);
   transform.translate(- (diagonal / 2), - (diagonal / 2));
   
   paint->setTransform(transform);
-  paint->drawImage (mMouseMovePoint.x (), mMouseMovePoint.y (), image);
+  paint->drawImage (0, 0, image);
   
 }
