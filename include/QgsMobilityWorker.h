@@ -69,6 +69,7 @@ public:
   void reset (void);
   void halt (void);
   QgsPoint pixelToCoordinate (int, int);
+  QgsPoint centerCoordinate (void);
   
   static QgsMobilityWorker &instance (void);
   static void destroy (void);

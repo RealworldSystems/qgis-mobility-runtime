@@ -19,7 +19,9 @@
 #if !defined (_QGS_MOBILITY_H)
 #define _QGS_MOBILITY_H
 
-#include <QObject>
+#include <QtCore/QObject>
+#include <QtCore/QPointF>
+#include <QtGui/QImage>
 
 class QgsMobility : public QObject
 {
@@ -33,6 +35,7 @@ public:
   int rotate (int);
   bool panByPixels (int start_x, int start_y, int end_x, int end_y);
   void scale (int);
+  QPointF center (void);
   
   // Public but not visible to the python layer, as it is internal
   
@@ -42,10 +45,15 @@ public:
   static QgsMobility * instance (void);
 
 signals:
-  void rotateView (int rotation);
-  void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
+  
   void clickAndHold (double x, double y);
   void clicked (double x, double y);
+  void ready (const QImage &);
+
+  // Public but not visible to the python layer, as it is internal
+
+  void rotateView (int rotation);
+  void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
   void scaleMap (int);
 };
 

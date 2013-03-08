@@ -92,3 +92,9 @@ void QgsMobility::scale (int scale)
 {
   emit scaleMap (scale);
 }
+
+QPointF QgsMobility::center (void)
+{
+  QgsPoint point = QgsMobilityWorker::instance().centerCoordinate();
+  return QPointF((qreal)(point.x ()), (qreal)(point.y ()));
+}

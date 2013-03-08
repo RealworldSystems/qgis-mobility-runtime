@@ -80,6 +80,10 @@ void QgsMobilityWorker::init (void)
   connect (QgsMobility::instance(), SIGNAL (scaleMap (int)),
 	   ::projectWorker_p,       SLOT (scaleMap (int)));
 
+  connect (this,                    SIGNAL (ready (const QImage &)),
+	   QgsMobility::instance(), SIGNAL (ready (const QImage &)));
+
+
   connect (&(this->mThread), SIGNAL (started ()), 
 	   this,             SLOT (doWork ()));
   
@@ -191,6 +195,10 @@ QgsPoint QgsMobilityWorker::pixelToCoordinate (int x, int y)
   return this->mRenderer.coordinateTransform()->toMapCoordinates (x, y);  
 }
 
+QgsPoint QgsMobilityWorker::centerCoordinate (void)
+{
+  return this->mRenderer.extent().center();
+}
 
 void QgsMobilityWorker::setSize (const QSize &size)
 {

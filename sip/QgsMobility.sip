@@ -30,9 +30,11 @@ public:
   int rotate (int);
   static QgsMobility * instance ();
   void scale (int);
+  QPointF center ();
 
 signals:
   void rotateView (int rotation);
   void clickAndHold (double x, double y);
   void clicked (double x, double y);
+  void ready (const QImage &image);
 };

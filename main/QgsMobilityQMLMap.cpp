@@ -132,8 +132,6 @@ void QgsMobilityQMLMap::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
 
   if (mMouseMovePoint.x () != 0 || mMouseMovePoint.y () != 0)
     {
-      mMouseMovePoint.setX(0);
-      mMouseMovePoint.setY(0);
       QPointF start = this->counterViewportOffset (event->buttonDownPos (Qt::LeftButton));
       std::complex<qreal> start_complex = 
 	std::complex<qreal> (start.x (), start.y ()) * correction_factor;
@@ -162,6 +160,8 @@ void QgsMobilityQMLMap::retrieveImage (const QImage &image)
 {
   QMutexLocker locker (&this->mMutex);
   this->mImage = image;
+  mMouseMovePoint.setX(0);
+  mMouseMovePoint.setY(0);
   this->update (this->boundingRect ());
   
 }
