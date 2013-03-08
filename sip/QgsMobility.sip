@@ -29,4 +29,10 @@ public:
   QString load_project (QString);
   int rotate (int);
   static QgsMobility * instance ();
+  void scale (int);
+
+signals:
+  void rotateView (int rotation);
+  void clickAndHold (double x, double y);
+  void clicked (double x, double y);
 };

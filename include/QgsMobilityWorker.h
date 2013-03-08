@@ -41,6 +41,7 @@ class QgsMobilityProjectWorker : public QObject
 public slots:
   void readProject (const QDomDocument &);
   void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
+  void scaleMap (int);
   
 private:
   QgsMobilityProjectWorker (QgsMobilityWorker *);
@@ -48,6 +49,7 @@ private:
   QgsMapRenderer &renderer (void);
   void reset (void);
   void moveExtent (double offset_x, double offset_y);
+  void setExtent (const QgsRectangle &);
 };
 
 class QgsMobilityWorker : public QObject
@@ -66,6 +68,7 @@ public:
   void setSize (const QSize &);
   void reset (void);
   void halt (void);
+  QgsPoint pixelToCoordinate (int, int);
   
   static QgsMobilityWorker &instance (void);
   static void destroy (void);

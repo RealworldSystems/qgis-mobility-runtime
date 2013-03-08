@@ -32,13 +32,21 @@ public:
   QString load_project (QString);
   int rotate (int);
   bool panByPixels (int start_x, int start_y, int end_x, int end_y);
+  void scale (int);
+  
+  // Public but not visible to the python layer, as it is internal
+  
+  void mapClickAndHoldByPixels (int x, int y);
+  void mapClickedByPixels (int x, int y);
     
   static QgsMobility * instance (void);
 
 signals:
   void rotateView (int rotation);
   void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
-
+  void clickAndHold (double x, double y);
+  void clicked (double x, double y);
+  void scaleMap (int);
 };
 
 #endif // _QGS_MOBILITY_H

@@ -29,6 +29,7 @@
 
 static QgsMobilityProjectWorker *projectWorker_p = 0;
 static QgsMobilityWorker *worker_p = 0;
+static double currentScale = 0;
 
 QgsMobilityWorker::QgsMobilityWorker (void) :
   mSemaphore (0),
@@ -76,6 +77,8 @@ void QgsMobilityWorker::init (void)
   connect (QgsMobility::instance(), SIGNAL (panMapByPixels (int, int, int, int)),
 	   ::projectWorker_p,       SLOT (panMapByPixels (int, int, int, int)));
 
+  connect (QgsMobility::instance(), SIGNAL (scaleMap (int)),
+	   ::projectWorker_p,       SLOT (scaleMap (int)));
 
   connect (&(this->mThread), SIGNAL (started ()), 
 	   this,             SLOT (doWork ()));
@@ -111,11 +114,19 @@ void QgsMobilityProjectWorker::readProject (const QDomDocument &doc)
   this->reset ();
 }
 
-void QgsMobilityProjectWorker::moveExtent (double offset_x, double offset_y)
+void QgsMobilityProjectWorker::setExtent (const QgsRectangle &extent)
 {
-  
   QMutexLocker locker (&(this->mWorker_p->mMutex));
 
+  // Set the extent of the renderer
+  this->renderer().setExtent (extent);
+
+  // Reset the host worker
+  this->reset ();
+}
+
+void QgsMobilityProjectWorker::moveExtent (double offset_x, double offset_y)
+{
   // Get the old extent and create a new extent based on the old extent using
   // the given offsets
   QgsRectangle old_extent = this->renderer().extent();
@@ -124,23 +135,16 @@ void QgsMobilityProjectWorker::moveExtent (double offset_x, double offset_y)
 			   old_extent.yMinimum () - offset_y,
 			   old_extent.xMaximum () - offset_x,
 			   old_extent.yMaximum () - offset_y);
-  
-  // Set the extent of the renderer
-  this->renderer().setExtent (new_extent);
-
-  // Reset the host worker
-  this->reset ();
+ 
+  this->setExtent (new_extent);
 }
 
 void QgsMobilityProjectWorker::panMapByPixels (int start_x, int start_y,
 					       int end_x, int end_y)
 {
   // First transform the given pixels to the coordinates on the map.
-  QgsPoint start = this->renderer().coordinateTransform()->
-    toMapCoordinates (start_x, start_y);
-
-  QgsPoint end = this->renderer().coordinateTransform()->
-    toMapCoordinates (end_x, end_y);
+  QgsPoint start = this->mWorker_p->pixelToCoordinate(start_x, start_y);
+  QgsPoint end = this->mWorker_p->pixelToCoordinate(end_x, end_y);
   
   // Determine the offsets from start -> end
   double offset_x = end.x() - start.x();
@@ -150,12 +154,65 @@ void QgsMobilityProjectWorker::panMapByPixels (int start_x, int start_y,
   this->moveExtent (offset_x, offset_y);
 }
 
+void QgsMobilityProjectWorker::scaleMap (int scale)
+{
+  /* The original scale was set to the renderer scale by the renderer's 
+     updateScale () routine. */
+
+  double orig_scale = this->renderer().scale();
+
+  /* The difference between the original scale and the destination scale
+     is how the extent is going to be altered. */
+  double delta_scale = ((double)scale) / orig_scale;
+
+  /* Store the scale into the current scale, if the size has changed,
+     it should restore to this scale */
+  ::currentScale = scale;
+
+
+  qDebug() << 
+    "Performing scaling: " <<
+    " orig: " << orig_scale <<
+    " new: " << scale <<
+    " delta: " << delta_scale;
+
+  /* Given the center coordinate of old_extent, the values need to get
+     closer to it or more distant from it (shrink or explode) */
+  QgsRectangle extent = this->renderer().extent();
+  extent.scale (delta_scale);
+  
+  // Set the extent
+  this->setExtent (extent);
+  
+}
+
+QgsPoint QgsMobilityWorker::pixelToCoordinate (int x, int y)
+{
+  return this->mRenderer.coordinateTransform()->toMapCoordinates (x, y);  
+}
+
 
 void QgsMobilityWorker::setSize (const QSize &size)
 {
   QMutexLocker locker (&(this->mMutex));
   this->mData.size = size;
-  this->reset ();
+  if (size.width () && size.height ())
+    {
+      this->mRenderer.setOutputSize (this->mData.size, 96);
+
+      if (::currentScale != 0)
+	{
+	  ::projectWorker_p->scaleMap (currentScale);
+	}
+      else
+	{
+	  this->reset ();
+	}
+    }
+  else
+    {
+      this->reset ();
+    }
 }
 
 void QgsMobilityWorker::reset (void)
@@ -187,13 +244,6 @@ void QgsMobilityWorker::doWork (void)
     {
       mSemaphore.acquire ();
       
-  QgsRectangle extent = this->mRenderer.extent();
-
-  qDebug() << "paint extent xmin: " << extent.xMinimum();
-  qDebug() << "paint extent ymin: " << extent.yMinimum();
-  qDebug() << "paint extent xmax: " << extent.xMaximum();
-  qDebug() << "paint extent ymax: " << extent.yMaximum();
-
       /* If halt is set, work is done */
       if (! this->mHalt)
 	{
@@ -203,7 +253,6 @@ void QgsMobilityWorker::doWork (void)
 	  if (data.size.width () && data.size.height ())
 	    {
 	      image.fill (QColor (255, 255, 255).rgb ());
-	      this->mRenderer.setOutputSize (data.size, 96);
 	      QgsMobilityPainter paint;
 	      paint.begin (&image);
 	      paint.setClipRect (image.rect ());

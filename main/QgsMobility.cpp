@@ -22,11 +22,12 @@
 #include <QtCore/QFileInfo>
 
 #include <QgsMobility.h>
+#include <QgsMobilityWorker.h>
 #include <qgsproject.h>
+#include <qgspoint.h>
 
 
 static QgsMobility * instance = 0;
-
 
 QgsMobility * QgsMobility::instance (void)
 {
@@ -73,4 +74,21 @@ bool QgsMobility::panByPixels (int start_x, int start_y, int end_x, int end_y)
     {
       return false;
     }
+}
+
+void QgsMobility::mapClickAndHoldByPixels (int x, int y)
+{
+  QgsPoint point = QgsMobilityWorker::instance().pixelToCoordinate(x, y);
+  emit clickAndHold (point.x (), point.y ());
+}
+
+void QgsMobility::mapClickedByPixels (int x, int y)
+{
+  QgsPoint point = QgsMobilityWorker::instance().pixelToCoordinate(x, y);
+  emit clicked (point.x (), point.y ());
+}
+
+void QgsMobility::scale (int scale)
+{
+  emit scaleMap (scale);
 }

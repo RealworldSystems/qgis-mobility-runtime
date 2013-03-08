@@ -132,7 +132,7 @@ static inline void checkedImportModule (const char *name, bool decref)
 
 static inline void configure (void)
 {
-  checkedImportModule ("config.target");
+  checkedImportModule ("config.target", false);
 }
 
 static inline void preConfigure (void)

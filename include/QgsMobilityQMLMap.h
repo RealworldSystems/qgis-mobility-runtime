@@ -22,6 +22,7 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QEvent>
+#include <QtCore/QTimer>
 #include <QtDeclarative/QDeclarativeItem>
 
 class QgsMobilityQMLMap : public QDeclarativeItem
@@ -41,6 +42,7 @@ public:
 protected:
   void geometryChanged (const QRectF &, const QRectF &);
   int diagonal (void);
+  void mousePressEvent (QGraphicsSceneMouseEvent *);
   void mouseMoveEvent (QGraphicsSceneMouseEvent *);
   void mouseReleaseEvent (QGraphicsSceneMouseEvent *);
 private:
@@ -49,12 +51,18 @@ private:
   QImage mImage;
   QMutex mMutex;
   QPointF mMouseMovePoint;
+  QPointF mMousePressAndHoldPoint;
+  qint64 mMousePressMillis;
+  QTimer mMousePressAndHoldTimer;
+  bool mMouseCanMoveMap;
 
   QImage copyImage (void);
   qreal counterCornerPolar (void);
   QPointF counterViewportOffset (const QPointF & viewport);
   qreal counterScreenOffset (int range);
-  
+
+private slots:
+  void mousePressAndHold (void);
 };
   
 #endif
