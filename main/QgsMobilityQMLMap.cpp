@@ -39,6 +39,7 @@
 #include <complex>
 
 static const qreal PI = 2 * qAcos(0.0);
+static QgsMobilityQMLMap *defaultQMLMap = 0;
 
 QgsMobilityQMLMap::QgsMobilityQMLMap (void) : 
   QDeclarativeItem (),
@@ -59,23 +60,43 @@ QgsMobilityQMLMap::QgsMobilityQMLMap (void) :
   connect (QgsMobility::instance (), SIGNAL (rotateView (int)),
 	   this, SLOT (rotate (int)));
 
+  connect (this, SIGNAL (mapRendered ()),
+	   QgsMobility::instance (), SIGNAL (rendered ()));
+
   connect (&(this->mMousePressAndHoldTimer), SIGNAL (timeout ()),
 	   this, SLOT (mousePressAndHold ()));
 
   setAcceptedMouseButtons (Qt::LeftButton | Qt::MidButton | Qt::RightButton);
   setAcceptTouchEvents (true);
   setAcceptHoverEvents (true);
+
+  if (!::defaultQMLMap) { ::defaultQMLMap = this; }
+}
+
+QgsMobilityQMLMap::~QgsMobilityQMLMap (void)
+{
+  if (::defaultQMLMap == this) { ::defaultQMLMap = 0; }
+}
+
+QgsMobilityQMLMap *QgsMobilityQMLMap::getDefault (void)
+{
+  return ::defaultQMLMap;
 }
 
 qreal QgsMobilityQMLMap::counterCornerPolar (void)
 {
-  return 0.0 - (((qreal) mRotate) / 180 * PI);
+  return 0.0 - this->cornerPolar ();
+}
+
+qreal QgsMobilityQMLMap::cornerPolar (void)
+{
+  return ((qreal) mRotate) / 180 * PI;
 }
 
 qreal QgsMobilityQMLMap::counterScreenOffset (int range)
 {
   int diagonal = this->diagonal ();
-  return ((qreal)diagonal - (qreal)range / 2);
+  return ((qreal)diagonal - (qreal)range) / 2;
 }
 
 QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
@@ -83,6 +104,13 @@ QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
   QRectF bounds = this->boundingRect ();
   return QPointF (this->counterScreenOffset (bounds.width ()) + viewport.x (),
 		  this->counterScreenOffset (bounds.height ()) + viewport.y ());
+}
+
+QPointF QgsMobilityQMLMap::viewportOffset (const QPointF &viewport)
+{
+  QRectF bounds = this->boundingRect ();
+  return QPointF (viewport.x () - this->counterScreenOffset (bounds.width ()),
+		  viewport.y () - this->counterScreenOffset (bounds.height ()));
 }
 
 void QgsMobilityQMLMap::mousePressEvent (QGraphicsSceneMouseEvent *event)
@@ -148,6 +176,16 @@ void QgsMobilityQMLMap::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
       QgsMobility::instance()->mapClickedByPixels (current_complex.real (), 
 						   current_complex.imag ());
     }
+}
+
+QPointF QgsMobilityQMLMap::renderPixelToMapPixel (const QPointF &point)
+{
+  QPointF current = this->viewportOffset (point);
+  qreal corner = this->cornerPolar ();
+  std::complex<qreal> correction_factor (qCos (corner), qSin (corner));
+  std::complex<qreal> current_complex = 
+    std::complex<qreal> (current.x (), current.y ()) * correction_factor;
+  return QPointF (current_complex.real (), current_complex.imag ());
 }
 
 QImage QgsMobilityQMLMap::copyImage (void)
@@ -218,4 +256,5 @@ void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *
   paint->setTransform(transform);
   paint->drawImage (0, 0, image);
   
+  emit mapRendered ();
 }

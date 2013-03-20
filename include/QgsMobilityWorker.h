@@ -42,12 +42,14 @@ public slots:
   void readProject (const QDomDocument &);
   void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
   void scaleMap (int);
+  void moveMapCenter (const QgsPoint &);
+  void reset (void);
+  void setLayerSet (const QStringList &);
   
 private:
   QgsMobilityProjectWorker (QgsMobilityWorker *);
   QgsMobilityWorker *mWorker_p;
   QgsMapRenderer &renderer (void);
-  void reset (void);
   void moveExtent (double offset_x, double offset_y);
   void setExtent (const QgsRectangle &);
 };
@@ -69,7 +71,9 @@ public:
   void reset (void);
   void halt (void);
   QgsPoint pixelToCoordinate (int, int);
+  QgsPoint coordinateToPixel (const QgsPoint &);
   QgsPoint centerCoordinate (void);
+  QgsRectangle extent (void);
   
   static QgsMobilityWorker &instance (void);
   static void destroy (void);

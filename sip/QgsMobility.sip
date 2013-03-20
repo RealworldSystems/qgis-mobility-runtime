@@ -31,10 +31,16 @@ public:
   static QgsMobility * instance ();
   void scale (int);
   QPointF center ();
+  QgsRectangle extent ();
+  QPointF coordinateToPixel (const QgsPoint &coord);
+  void moveCenter (const QgsPoint &coords);
+  void setLayerSet (const QStringList &);
+  void reset ();
 
 signals:
   void rotateView (int rotation);
   void clickAndHold (double x, double y);
   void clicked (double x, double y);
   void ready (const QImage &image);
+  void rendered ();
 };

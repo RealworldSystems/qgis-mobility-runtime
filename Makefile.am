@@ -127,6 +127,9 @@ sip: $(top_srcdir)/sip/*.sip $(top_builddir)/Makefile
 	    rm -rf $(SIPTEMP_DIR)/*.cpp ; \
 	    rm -rf $(SIPTEMP_DIR)/*.h ; \
 	    echo "  SIP    $< > $@" ; \
+	    if test "x$(ECHO_V)" == x ; then \
+	        echo @SIP_RUN@ ; \
+	    fi ; \
 	    @SIP_RUN@ ; \
 	    cat $(SIPTEMP_DIR)/*.cpp > $(SIPTEMP_DIR)/almagation.cpp ; \
 	  fi )

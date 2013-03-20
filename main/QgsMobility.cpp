@@ -23,6 +23,7 @@
 
 #include <QgsMobility.h>
 #include <QgsMobilityWorker.h>
+#include <QgsMobilityQMLMap.h>
 #include <qgsproject.h>
 #include <qgspoint.h>
 
@@ -93,8 +94,43 @@ void QgsMobility::scale (int scale)
   emit scaleMap (scale);
 }
 
+void QgsMobility::moveCenter (const QgsPoint &point)
+{
+  emit moveMapCenter (point);
+}
+
 QPointF QgsMobility::center (void)
 {
   QgsPoint point = QgsMobilityWorker::instance().centerCoordinate();
   return QPointF((qreal)(point.x ()), (qreal)(point.y ()));
+}
+
+QgsRectangle QgsMobility::extent (void)
+{
+  return QgsMobilityWorker::instance().extent();
+}
+
+QPointF QgsMobility::coordinateToPixel (const QgsPoint &coord)
+{
+  QgsPoint phase1 = QgsMobilityWorker::instance().coordinateToPixel (coord);
+  QPointF phase2 = QPointF (phase1.x(), phase1.y());
+  QgsMobilityQMLMap *map = QgsMobilityQMLMap::getDefault();
+    if (map)
+      {
+	return map->renderPixelToMapPixel (phase2);
+      }
+    else
+      {
+	return QPointF (0, 0);
+      }
+}
+
+void QgsMobility::reset (void)
+{
+  emit resetMap();
+}
+
+void QgsMobility::setLayerSet(const QStringList &list)
+{
+  emit setLayerSetMap (list);
 }

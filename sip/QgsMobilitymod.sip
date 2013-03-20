@@ -27,6 +27,7 @@
 
 %Import QtCore/QtCoremod.sip
 %Import QtGui/QtGuimod.sip
+%Import core/core.sip
 
 %If (Qt_4_2_0 -)
 

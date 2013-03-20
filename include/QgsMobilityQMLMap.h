@@ -32,12 +32,18 @@ Q_OBJECT
 public slots:
   void retrieveImage (const QImage &);
   void rotate (int);
+
+ signals:
+  void mapRendered (void);
   
 public:
   QgsMobilityQMLMap (void);
+  ~QgsMobilityQMLMap (void);
   void paint (QPainter *, const QStyleOptionGraphicsItem *, QWidget *);
   const QSize & renderSize (void);
+  QPointF renderPixelToMapPixel (const QPointF &);
 
+  static QgsMobilityQMLMap *getDefault (void);
 
 protected:
   void geometryChanged (const QRectF &, const QRectF &);
@@ -57,8 +63,10 @@ private:
   bool mMouseCanMoveMap;
 
   QImage copyImage (void);
+  qreal cornerPolar (void);
   qreal counterCornerPolar (void);
   QPointF counterViewportOffset (const QPointF & viewport);
+  QPointF viewportOffset (const QPointF & viewport);
   qreal counterScreenOffset (int range);
 
 private slots:

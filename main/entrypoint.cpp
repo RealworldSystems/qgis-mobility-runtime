@@ -81,6 +81,11 @@ QgsMobilityInitialization (const QString & prefix_path,
   QgsProviderRegistry::instance (plugin_path);
   QgsApplication::setPrefixPath (prefix_path);
   QgsApplication::setPluginPath (plugin_path);
+#if defined (ANDROID)
+  QgsApplication::setPkgDataPath (prefix_path + "/files");
+#else
+  QgsApplication::setPkgDataPath (prefix_path);
+#endif
   QgsMapLayerRegistry::instance ();
 
   QgsMobilityWorker::instance ();

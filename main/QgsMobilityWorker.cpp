@@ -80,8 +80,18 @@ void QgsMobilityWorker::init (void)
   connect (QgsMobility::instance(), SIGNAL (scaleMap (int)),
 	   ::projectWorker_p,       SLOT (scaleMap (int)));
 
+  connect (QgsMobility::instance(), SIGNAL (moveMapCenter (const QgsPoint &)),
+	   ::projectWorker_p,       SLOT (moveMapCenter (const QgsPoint &)));
+
+  connect (QgsMobility::instance(), SIGNAL (resetMap ()),
+	   ::projectWorker_p,       SLOT (reset()));
+
+  connect (QgsMobility::instance(), SIGNAL (setLayerSetMap (const QStringList &)),
+	   ::projectWorker_p,       SLOT (setLayerSet (const QStringList &)));
+
   connect (this,                    SIGNAL (ready (const QImage &)),
 	   QgsMobility::instance(), SIGNAL (ready (const QImage &)));
+
 
 
   connect (&(this->mThread), SIGNAL (started ()), 
@@ -113,7 +123,13 @@ void QgsMobilityProjectWorker::readProject (const QDomDocument &doc)
       this->renderer().readXML (node);
     }
 
-  QStringList list = QgsMapLayerRegistry::instance()->mapLayers().keys();
+  this->setLayerSet(QgsMapLayerRegistry::instance()->mapLayers().keys());
+}
+
+void QgsMobilityProjectWorker::setLayerSet (const QStringList &list)
+{
+  QMutexLocker locker (&(this->mWorker_p->mMutex));
+  
   this->renderer().setLayerSet (list);
   this->reset ();
 }
@@ -127,6 +143,19 @@ void QgsMobilityProjectWorker::setExtent (const QgsRectangle &extent)
 
   // Reset the host worker
   this->reset ();
+}
+
+void QgsMobilityProjectWorker::moveMapCenter (const QgsPoint &point)
+{
+  QgsRectangle old_extent = this->renderer().extent();
+
+  double width = old_extent.width();
+  double height = old_extent.height();
+  
+  QgsRectangle new_extent (point.x() - (width / 2), point.y() - (width / 2),
+			   point.x() + (width / 2), point.y() + (width / 2));
+
+  this->setExtent (new_extent);
 }
 
 void QgsMobilityProjectWorker::moveExtent (double offset_x, double offset_y)
@@ -195,9 +224,19 @@ QgsPoint QgsMobilityWorker::pixelToCoordinate (int x, int y)
   return this->mRenderer.coordinateTransform()->toMapCoordinates (x, y);  
 }
 
+QgsPoint QgsMobilityWorker::coordinateToPixel (const QgsPoint &coord)
+{
+  return this->mRenderer.coordinateTransform()->transform (coord);
+}
+
 QgsPoint QgsMobilityWorker::centerCoordinate (void)
 {
   return this->mRenderer.extent().center();
+}
+
+QgsRectangle QgsMobilityWorker::extent (void)
+{
+  return this->mRenderer.extent();
 }
 
 void QgsMobilityWorker::setSize (const QSize &size)

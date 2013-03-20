@@ -407,6 +407,20 @@ AC_ARG_WITH(
 	[PYQT4_DIR=${withval}],
 	[PYQT4_DIR=`$PYTHON -c "$ac_py_import; print $ac_py_pyqt_sip_dir"`])
 
+dnl
+dnl ---- Specify additional SIP include directories
+dnl
+dnl Normally, these are the SIP directories we need. If additional directories
+dnl are necessary, they should be configured here
+
+AC_ARG_WITH(
+	[xtra-sip-dirs],
+	[AS_HELP_STRING(
+		[--with-xtra-sip-dirs=EXTRA_SIP_DIRS],
+		[to specify additional SIP directories, separated with colons])],
+	[XTRA_SIP_DIRS=${withval}],
+	[XTRA_SIP_DIRS=])
+
 
 SIP_FEATURES=
 
@@ -549,8 +563,18 @@ dnl Build the android wrapper library code if the android wrapper is
 dnl selected. This is done by the ANDROID_ME function.
 AM_CONDITIONAL(ANDROID_WRAPPER, test x"$android_wrapper" == xyes)
 
+
+SIP_PROPER_XTRA_SIP_DIRS=
+
+SIP_PROPER_XTRA_SIP_DIRS_COUNT=`echo -n "$XTRA_SIP_DIRS" | wc -m`
+
+if test x$SIP_PROPER_XTRA_SIP_DIRS_COUNT != x0 ; then
+   SIP_PROPER_XTRA_SIP_DIRS=`echo "$XTRA_SIP_DIRS" | sed 's/:/ -I /'`
+   SIP_PROPER_XTRA_SIP_DIRS="-I $SIP_PROPER_XTRA_SIP_DIRS"
+fi
+
 SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file $SIP_FEATURES \
-	      -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
+	      $SIP_PROPER_XTRA_SIP_DIRS -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
 
 AC_SUBST(SIP_RUN)
 

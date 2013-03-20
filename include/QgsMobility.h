@@ -22,6 +22,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtGui/QImage>
+#include <qgsrectangle.h>
+#include <qgspoint.h>
 
 class QgsMobility : public QObject
 {
@@ -36,6 +38,11 @@ public:
   bool panByPixels (int start_x, int start_y, int end_x, int end_y);
   void scale (int);
   QPointF center (void);
+  QgsRectangle extent (void);
+  QPointF coordinateToPixel (const QgsPoint &);
+  void moveCenter (const QgsPoint &);
+  void setLayerSet (const QStringList &);
+  void reset (void);
   
   // Public but not visible to the python layer, as it is internal
   
@@ -49,12 +56,16 @@ signals:
   void clickAndHold (double x, double y);
   void clicked (double x, double y);
   void ready (const QImage &);
+  void rendered (void);
+  void rotateView (int rotation);
 
   // Public but not visible to the python layer, as it is internal
 
-  void rotateView (int rotation);
   void panMapByPixels (int start_x, int start_y, int end_x, int end_y);
   void scaleMap (int);
+  void resetMap (void);
+  void setLayerSetMap (const QStringList &);
+  void moveMapCenter (const QgsPoint &);
 };
 
 #endif // _QGS_MOBILITY_H
