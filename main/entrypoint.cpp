@@ -81,11 +81,16 @@ QgsMobilityInitialization (const QString & prefix_path,
   QgsProviderRegistry::instance (plugin_path);
   QgsApplication::setPrefixPath (prefix_path);
   QgsApplication::setPluginPath (plugin_path);
+  QStringList svgPaths;
+  
 #if defined (ANDROID)
   QgsApplication::setPkgDataPath (prefix_path + "/files");
+  svgPaths << (prefix_path + "/files/application");
 #else
   QgsApplication::setPkgDataPath (prefix_path);
+  svgPaths << prefix_path;
 #endif
+  QgsApplication::setDefaultSvgPaths (svgPaths);
   QgsMapLayerRegistry::instance ();
 
   QgsMobilityWorker::instance ();
