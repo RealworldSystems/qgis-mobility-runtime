@@ -99,18 +99,26 @@ qreal QgsMobilityQMLMap::counterScreenOffset (int range)
   return ((qreal)diagonal - (qreal)range) / 2;
 }
 
+qreal QgsMobilityQMLMap::screenOffset (int range)
+{
+  int diagonal = this->diagonal ();
+  return ((qreal)diagonal - (qreal)range) / 2;
+}
+
+
 QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
 {
   QRectF bounds = this->boundingRect ();
-  return QPointF (this->counterScreenOffset (bounds.width ()) + viewport.x (),
+  qDebug() << "Viewport x:" << viewport.x() << "y:" << viewport.y();
+  return QPointF (this->counterScreenOffset (bounds.width ())  + viewport.x (),
 		  this->counterScreenOffset (bounds.height ()) + viewport.y ());
 }
 
 QPointF QgsMobilityQMLMap::viewportOffset (const QPointF &viewport)
 {
   QRectF bounds = this->boundingRect ();
-  return QPointF (viewport.x () - this->counterScreenOffset (bounds.width ()),
-		  viewport.y () - this->counterScreenOffset (bounds.height ()));
+  return QPointF (viewport.x () - this->screenOffset (bounds.width ()),
+		  viewport.y () - this->screenOffset (bounds.height ()));
 }
 
 void QgsMobilityQMLMap::mousePressEvent (QGraphicsSceneMouseEvent *event)
@@ -125,13 +133,8 @@ void QgsMobilityQMLMap::mousePressEvent (QGraphicsSceneMouseEvent *event)
 void QgsMobilityQMLMap::mousePressAndHold (void)
 {
   this->mMouseCanMoveMap = false;
-  QPointF current = this->counterViewportOffset (this->mMousePressAndHoldPoint);
-  qreal corner = this->counterCornerPolar ();
-  std::complex<qreal> correction_factor (qCos (corner), qSin (corner));
-  std::complex<qreal> current_complex = 
-    std::complex<qreal> (current.x (), current.y ()) * correction_factor;
-
-  QgsMobility::instance()->mapClickAndHoldByPixels (current_complex.real (), current_complex.imag ());
+  QPointF current = calculateCounterPosition (this->mMousePressAndHoldPoint);
+  QgsMobility::instance()->mapClickAndHoldByPixels (current.x (), current.y ());
   
   qDebug() << "Press And Hold";
 }
@@ -146,35 +149,48 @@ void QgsMobilityQMLMap::mouseMoveEvent (QGraphicsSceneMouseEvent *event)
     }
 }
 
+QPointF QgsMobilityQMLMap::calculateCounterPosition (const QPointF & position)
+{
+  qreal r = (qreal)(this->diagonal ()) / 2.0;
+  QPointF countered = this->counterViewportOffset (position);  
+  QPointF current(countered.x() - r, countered.y() - r);
+  qreal corner = this->counterCornerPolar ();
+  qDebug() << "Corner Polar:" << corner;
+  std::complex<qreal> correction_factor (qCos (corner), qSin (corner));
+  std::complex<qreal> current_complex = 
+    std::complex<qreal> (current.x (), current.y ()) * correction_factor;
+  
+  qDebug() << "Current w/ offset x:" << current.x() << "y:" << current.y();
+  qDebug() << "Current complex x:" << current_complex.real() << 
+    "y:" << current_complex.imag();
+
+  return QPointF(current_complex.real() + r, current_complex.imag() + r);
+  
+}
+
 void QgsMobilityQMLMap::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
 {
   this->mMousePressAndHoldTimer.stop ();
 
   if (!this->mMouseCanMoveMap) { return; }
+  
+  QPointF current = this->calculateCounterPosition (event->pos ());
 
-  QPointF current = this->counterViewportOffset (event->pos ());
-  qreal corner = this->counterCornerPolar ();
-  std::complex<qreal> correction_factor (qCos (corner), qSin (corner));
-  std::complex<qreal> current_complex = 
-    std::complex<qreal> (current.x (), current.y ()) * correction_factor;
+  qDebug() << "New Current w/ offset x:" << current.x() << "y:" << current.y();
+
 
   if (mMouseMovePoint.x () != 0 || mMouseMovePoint.y () != 0)
     {
-      QPointF start = this->counterViewportOffset (event->buttonDownPos (Qt::LeftButton));
-      std::complex<qreal> start_complex = 
-	std::complex<qreal> (start.x (), start.y ()) * correction_factor;
-      
-      QgsMobility::instance()->panByPixels (start_complex.real (), 
-					    start_complex.imag (),
-					    current_complex.real (),
-					    current_complex.imag ());
+      QPointF start = this->calculateCounterPosition (event->buttonDownPos (Qt::LeftButton));
+      QgsMobility::instance()->panByPixels (start.x (), 
+					    start.y (),
+					    current.x (),
+					    current.y ());
     }
   else
     {
-      qDebug() << "Clicked";
-
-      QgsMobility::instance()->mapClickedByPixels (current_complex.real (), 
-						   current_complex.imag ());
+      QgsMobility::instance()->mapClickedByPixels (current.x (), 
+						   current.y ());
     }
 }
 

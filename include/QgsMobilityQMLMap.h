@@ -65,9 +65,11 @@ private:
   QImage copyImage (void);
   qreal cornerPolar (void);
   qreal counterCornerPolar (void);
+  QPointF calculateCounterPosition (const QPointF & position);
   QPointF counterViewportOffset (const QPointF & viewport);
   QPointF viewportOffset (const QPointF & viewport);
   qreal counterScreenOffset (int range);
+  qreal screenOffset (int range);
 
 private slots:
   void mousePressAndHold (void);
