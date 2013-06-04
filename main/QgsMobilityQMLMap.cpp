@@ -52,7 +52,7 @@ QgsMobilityQMLMap::QgsMobilityQMLMap (void) :
   setFlag (QGraphicsItem::ItemIsMovable, true);
   setSmooth (true);
   this->mMousePressAndHoldTimer.setSingleShot (true);
-  this->mMousePressAndHoldTimer.setInterval (2000);
+  this->mMousePressAndHoldTimer.setInterval (800);
   
   connect (&(QgsMobilityWorker::instance ()), SIGNAL (ready (const QImage &)),
 	   this, SLOT (retrieveImage (const QImage &)));

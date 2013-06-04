@@ -178,43 +178,56 @@ int runtime (int argc, char * argv[])
   QApplication app(argc, argv);
 
   qmlRegisterType <QgsMobilityQMLMap> ("QgsMobility", 1, 0, "Map");
-  
-  setenv ("AUTOCONF_PROJECT_CODE_PATH", PROJECT_CODE_PATH, 1);
 
-  //Py_SetProgramName(argv[0]);
-  Py_Initialize();
-#if defined (ANDROID)
+
+#if !defined (ANDROID)  
+  setenv ("AUTOCONF_PROJECT_CODE_PATH", PROJECT_CODE_PATH, 1);
+#else
   char *android_argv[3];
   android_argv[0] = argv[0];
+
   QString prefix_path = "--prefix-path=" % QString(getenv("PREFIX_PATH"));
   QString plugin_path = "--plugin-path=" % QString(getenv("PLUGIN_PATH"));
+  QString app_path = QString(getenv("PREFIX_PATH")) % "/files/application";
 
   qDebug() << "Prefix Path: " << prefix_path;
   qDebug() << "Plugin Path: " << plugin_path;
+  qDebug() << "Application: " << app_path;
 
   char *alloca_prefix = new char[prefix_path.size () + 1];
   char *alloca_plugin = new char[plugin_path.size () + 1];
+  char *alloca_app = new char[app_path.size () + 1];
 
   memset (alloca_prefix, 0, prefix_path.size () + 1);
   memset (alloca_plugin, 0, plugin_path.size () + 1);
+  memset (alloca_app, 0, app_path.size () + 1);
 
   QByteArray prefix_ba = prefix_path.toUtf8();
   QByteArray plugin_ba = plugin_path.toUtf8();
+  QByteArray app_ba = app_path.toUtf8();
 
   memcpy(alloca_prefix, prefix_ba.constData (), prefix_path.size ());
   memcpy(alloca_plugin, plugin_ba.constData (), plugin_path.size ());
+  memcpy(alloca_app, app_ba.constData (), app_path.size ());
 
   qDebug() << "Allocated Prefix" << QString(alloca_prefix);
   qDebug() << "Allocated Plugin" << QString(alloca_plugin);
+  qDebug() << "Allocated Application" << QString(alloca_app);
 
   android_argv[1] = alloca_prefix;
   android_argv[2] = alloca_plugin;
   
-  PySys_SetArgv(3, android_argv);
-#else
-  PySys_SetArgv(argc, argv);
-  
+  setenv ("AUTOCONF_PROJECT_CODE_PATH", alloca_app, 1);
 #endif
+
+  Py_Initialize();
+
+#if !defined (ANDROID)
+  PySys_SetArgv(argc, argv);
+#else
+  PySys_SetArgv(3, android_argv);  
+#endif
+
   qDebug() << "Estimated python path: " << QString(getenv("PYTHONPATH"));
   PySys_SetPath(getenv("PYTHONPATH"));
   PyEval_InitThreads();
@@ -240,6 +253,7 @@ int runtime (int argc, char * argv[])
 #if defined (ANDROID)
   delete alloca_prefix;
   delete alloca_plugin;
+  delete alloca_app;
 #endif
 
   return 0;

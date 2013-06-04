@@ -77,7 +77,7 @@ static QString acquire_base_path (void)
 
       QStringList path_elements = end.split ("/");
 
-      if (path_elements.last () == "libqgismobility_android_wrap.so")
+      if (path_elements.last () == "libqgismobility.so")
 	{
 	  qDebug() << "Found ourselves: " << end;
 	  int max_elements = path_elements.size () - 2;
