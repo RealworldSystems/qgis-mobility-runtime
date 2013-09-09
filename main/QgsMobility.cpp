@@ -94,9 +94,9 @@ void QgsMobility::scale (int scale)
   emit scaleMap (scale);
 }
 
-void QgsMobility::moveCenter (const QgsPoint &point)
+void QgsMobility::moveCenter (double coordX, double coordY)
 {
-  emit moveMapCenter (point);
+  emit moveMapCenter (QgsPoint(coordX, coordY));
 }
 
 QPointF QgsMobility::center (void)
@@ -110,9 +110,11 @@ QgsRectangle QgsMobility::extent (void)
   return QgsMobilityWorker::instance().extent();
 }
 
-QPointF QgsMobility::coordinateToPixel (const QgsPoint &coord)
+QPointF QgsMobility::coordinateToPixel (double coordX, double coordY)
 {
-  QgsPoint phase1 = QgsMobilityWorker::instance().coordinateToPixel (coord);
+  QgsPoint phase1 = QgsMobilityWorker::instance().coordinateToPixel 
+    (QgsPoint(coordX, coordY));
+  
   QPointF phase2 = QPointF (phase1.x(), phase1.y());
   QgsMobilityQMLMap *map = QgsMobilityQMLMap::getDefault();
     if (map)

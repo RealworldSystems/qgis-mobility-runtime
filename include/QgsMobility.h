@@ -39,8 +39,8 @@ public:
   void scale (int);
   QPointF center (void);
   QgsRectangle extent (void);
-  QPointF coordinateToPixel (const QgsPoint &);
-  void moveCenter (const QgsPoint &);
+  QPointF coordinateToPixel (double, double);
+  void moveCenter (double, double);
   void setLayerSet (const QStringList &);
   void reset (void);
   
