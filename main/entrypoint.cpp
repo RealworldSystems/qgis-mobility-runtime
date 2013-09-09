@@ -1,3 +1,5 @@
+// -*- c-file-style: "gnu"; c-basic-offset: 2 -*-
+
 /*
  *  This file is part of QGis Mobility
  *
@@ -31,6 +33,8 @@
 #include <QtCore/QLibrary>
 #include <QtCore/QString>
 #include <QtCore/QStringBuilder>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 
 #include <qgsapplication.h>
 #include <qgsproject.h>
@@ -42,6 +46,16 @@
 #include <QgsMobilityWorker.h>
 
 #include <QgsMobilityQMLMap.h>
+
+#if defined(HAVE_GETPID)
+#if HAVE_GETPID == 1
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+#endif
+
+#include <stdio.h>
+#include <string.h>
 
 PyMODINIT_FUNC initqgismobility (void);
 
@@ -129,15 +143,38 @@ static inline void checkedImportModule (const char *name, bool decref)
   PyObject *etype, *evalue, *etraceback;
   PyErr_Fetch (&etype, &evalue, &etraceback);
   if (evalue != NULL)
-    { /* Should not reach */
-      QgmPyDebug (evalue);
-      QgmPyDebug (etraceback);
+    { 
+      /* If the application ends up here, it means trouble */
+      PyObject *traceback_module = PyImport_ImportModule ("traceback");
+      PyObject *args = PyTuple_New (3);
+      PyObject *traceback_module_dict = PyModule_GetDict (traceback_module);
+      PyTuple_SetItem (args, 0, etype);
+      PyTuple_SetItem (args, 1, evalue);
+      PyTuple_SetItem (args, 2, etraceback);
+      PyObject *func = PyDict_GetItemString (traceback_module_dict, 
+					     "format_exception");
+      PyObject *res = PyObject_CallObject (func, args);
+      if (res)
+	{
+	  for (Py_ssize_t i = 0; i < PyList_GET_SIZE (res); ++i)
+	    {
+	      PyObject *item = PyList_GET_ITEM (res, i);
+	      QString s = PyString_AsString (item);
+	      Py_XDECREF (item);
+	      qDebug() << s;
+	    }
+	}
+     
+      Py_XDECREF (args);
+      Py_XDECREF (traceback_module);
+      exit(-1);
     }
 
   if (decref)
     {
       Py_XDECREF (config_module);
     }
+
 }
 
 static inline void configure (void)
@@ -156,18 +193,6 @@ static inline void preConfigure (void)
 static inline void run_interactivenetconsole (void)
 {
   checkedImportModule ("interactivenetconsole.boot", false);
-   //a_thread = new AndroidTCPConsoleThread ();
-   //a_thread->start ();
-
-  /*  QObject::connect(QApplication::instance(), SIGNAL (aboutToQuit ()),
-      a_thread, SLOT (terminate ()));*/
-}
-
-static inline void quit_interactivenetconsole (void)
-{
-  //a_thread->quit ();
-  //a_thread->wait ();
-  //delete a_thread;
 }
 
 #endif
@@ -228,11 +253,77 @@ int runtime (int argc, char * argv[])
   PySys_SetArgv(3, android_argv);  
 #endif
 
-  qDebug() << "Estimated python path: " << QString(getenv("PYTHONPATH"));
-  PySys_SetPath(getenv("PYTHONPATH"));
+  QString python_path = QString(getenv("PYTHONPATH"));
+  
+#if defined (HAVE_GETPID) && !defined (ANDROID) && HAVE_GETPID == 1
+  // Salt python path with the current executable path of the /proc filesystem
+  // is available.
+  
+  int pid = getpid();
+  QString proc_name = QString("/proc/%1/exe").arg(pid);
+  QFile proc_file(proc_name);
+  if (proc_file.exists ())
+    {
+      QFileInfo info(proc_name);
+      if (info.isSymLink ())
+	{
+	  if (python_path.size ()) python_path += ":";
+	  
+	  QString link_target = info.symLinkTarget();
+	  QString compilation_path = link_target.section ('/', -2, -2);
+	  if (compilation_path == ".libs")
+	    {
+	      python_path += link_target.section('/', 0, -3);
+	    }
+	  else
+	    {
+	      python_path += link_target.section('/', 0, -2);
+	    }
+	  python_path += "/qgsmsystem";
+	}
+    }
+#endif
+
+  if (python_path.size ()) python_path += ":";
+  python_path += ".";
+
+  char *python_path_buffer = 0;
+  char path_object_name[5];
+
+  qDebug() << "Additional python path: " << python_path;
+  memcpy(path_object_name, "path", 5);
+
+  PyObject *sys_path = PySys_GetObject(path_object_name);
+  if (sys_path != 0)
+    {
+      QStringList paths_list = python_path.split(':');
+      for (int i = 0; i < paths_list.size(); ++i)
+	{
+	  char *buffer = 0;
+	  QByteArray b_path = paths_list[i].toLatin1();
+	  const char *path = b_path.data();
+	  size_t len = strlen(path) + 1;
+	  buffer = new char[len];
+	  memcpy(buffer, path, len);
+	  PyList_Append(sys_path, PyString_FromString(buffer));
+	  delete buffer;
+	}
+    }
+  else
+    {
+      QByteArray b_path = python_path.toLatin1();
+      const char *path = b_path.data();
+      size_t len = strlen(path) + 1;
+      python_path_buffer = new char[len];
+      memcpy(python_path_buffer, path, len);
+      PySys_SetPath(python_path_buffer);
+    }
+
   PyEval_InitThreads();
 
   preConfigure ();
+
+  qDebug() << "Preconfiguration Finished";
 
   QgsMobilityConfigure config;
   
@@ -245,16 +336,15 @@ int runtime (int argc, char * argv[])
 #endif
   app.exec ();
   
-#if defined (ANDROID)
-  quit_interactivenetconsole ();
-#endif
   Py_Finalize();
 
 #if defined (ANDROID)
-  delete alloca_prefix;
-  delete alloca_plugin;
-  delete alloca_app;
+  if (alloca_prefix) delete alloca_prefix;
+  if (alloca_plugin) delete alloca_plugin;
+  if (alloca_app)    delete alloca_app;
 #endif
+
+  if (python_path_buffer) delete python_path_buffer;
 
   return 0;
 

@@ -472,7 +472,7 @@ AC_CHECK_HEADER(
 	AC_MSG_ERROR([Python header not found]),
 	AC_INCLUDES_DEFAULT)
 
-
+AC_CHECK_FUNCS(getpid)
 
 
 # Now we check whether we can actually build a Qt app.
@@ -574,7 +574,9 @@ if test x$SIP_PROPER_XTRA_SIP_DIRS_COUNT != x0 ; then
 fi
 
 SIP_RUN="$SIP -c $SIP_GENERATED -b $ac_sip_build_file $SIP_FEATURES \
-	      $SIP_PROPER_XTRA_SIP_DIRS -I $PYQT4_DIR $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
+	      $SIP_PROPER_XTRA_SIP_DIRS -I $PYQT4_DIR -I $SIP_PATH/qgis \
+	      -x QSETINT_CONVERSION -x QSETTYPE_CONVERSION \
+	      $PYQT4_FLAGS $SIP_PATH/QgsMobilitymod.sip"
 
 AC_SUBST(SIP_RUN)
 

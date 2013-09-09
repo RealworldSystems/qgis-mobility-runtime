@@ -14,7 +14,7 @@ def main(configure):
                         default=configure.default_plugin_path())
     parser.add_argument("--load-path", action="store", default="")
     ns = parser.parse_args()
-    load_path = os.pathsep.join([os.environ['PYTHONPATH'],
+    load_path = os.pathsep.join([os.pathsep.join(sys.path),
                                  os.environ['AUTOCONF_PROJECT_CODE_PATH']])
     
     if ns.load_path != None and ns.load_path != "":
