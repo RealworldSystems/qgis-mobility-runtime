@@ -68,6 +68,36 @@ static inline void checkedImportModule (const char *name, bool decref = true);
 static inline void configure (void);
 static inline void preConfigure (void);
 
+#if defined (HAVE_GETPID) && !defined (ANDROID) && HAVE_GETPID == 1
+  // Salt python path with the current executable path of the /proc filesystem
+  // is available.
+static QString getBasePath (void)
+{ 
+  int pid = getpid();
+  QString proc_name = QString("/proc/%1/exe").arg(pid);
+  QString base_path;
+  QFile proc_file(proc_name);
+  if (proc_file.exists ())
+    {
+      QFileInfo info(proc_name);
+      if (info.isSymLink ())
+	{
+	  QString link_target = info.symLinkTarget();
+	  QString compilation_path = link_target.section ('/', -2, -2);
+	  if (compilation_path == ".libs")
+	    {
+	      base_path += link_target.section('/', 0, -3);
+	    }
+	  else
+	    {
+	      base_path += link_target.section('/', 0, -2);
+	    }
+	}
+    }
+  return base_path;
+}
+#endif
+
 /*
  * The initialization routine is responsible for delegating the necessary
  * initialization options to QGis Core. It is a replacement routine of the
@@ -103,6 +133,13 @@ QgsMobilityInitialization (const QString & prefix_path,
 #else
   QgsApplication::setPkgDataPath (prefix_path);
   svgPaths << prefix_path;
+#if defined (HAVE_GETPID) && HAVE_GETPID == 1
+  QString basePath = getBasePath();
+  qDebug() << "BasePath: " + basePath;
+  svgPaths << basePath;
+#endif
+  QDir dir;
+  svgPaths << dir.absolutePath();
 #endif
   QgsApplication::setDefaultSvgPaths (svgPaths);
   QgsMapLayerRegistry::instance ();
@@ -256,31 +293,13 @@ int runtime (int argc, char * argv[])
   QString python_path = QString(getenv("PYTHONPATH"));
   
 #if defined (HAVE_GETPID) && !defined (ANDROID) && HAVE_GETPID == 1
-  // Salt python path with the current executable path of the /proc filesystem
-  // is available.
-  
-  int pid = getpid();
-  QString proc_name = QString("/proc/%1/exe").arg(pid);
-  QFile proc_file(proc_name);
-  if (proc_file.exists ())
+  if (python_path.size ())
     {
-      QFileInfo info(proc_name);
-      if (info.isSymLink ())
-	{
-	  if (python_path.size ()) python_path += ":";
-	  
-	  QString link_target = info.symLinkTarget();
-	  QString compilation_path = link_target.section ('/', -2, -2);
-	  if (compilation_path == ".libs")
-	    {
-	      python_path += link_target.section('/', 0, -3);
-	    }
-	  else
-	    {
-	      python_path += link_target.section('/', 0, -2);
-	    }
-	  python_path += "/qgsmsystem";
-	}
+      python_path += ":" + getBasePath() + "/qgsmsystem";
+    }
+  else
+    {
+      python_path = getBasePath() + "/qgsmsystem";
     }
 #endif
 
