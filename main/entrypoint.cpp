@@ -91,6 +91,7 @@ static QString getBasePath (void)
 	  else
 	    {
 	      base_path += link_target.section('/', 0, -2);
+	      base_path += "/../lib/qgis-mobility";
 	    }
 	}
     }
