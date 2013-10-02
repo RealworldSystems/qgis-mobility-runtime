@@ -179,32 +179,38 @@ static inline void checkedImportModule (const char *name, bool decref)
   qDebug () << "Attempting import of " << name << "\n";
   PyObject *config_module = PyImport_ImportModule (name);
   PyObject *etype, *evalue, *etraceback;
+  etype = NULL;
+  evalue = NULL;
+  etraceback = NULL;
   PyErr_Fetch (&etype, &evalue, &etraceback);
   if (evalue != NULL)
     { 
-      /* If the application ends up here, it means trouble */
-      PyObject *traceback_module = PyImport_ImportModule ("traceback");
-      PyObject *args = PyTuple_New (3);
-      PyObject *traceback_module_dict = PyModule_GetDict (traceback_module);
-      PyTuple_SetItem (args, 0, etype);
-      PyTuple_SetItem (args, 1, evalue);
-      PyTuple_SetItem (args, 2, etraceback);
-      PyObject *func = PyDict_GetItemString (traceback_module_dict, 
-					     "format_exception");
-      PyObject *res = PyObject_CallObject (func, args);
-      if (res)
+      if (etraceback != NULL)
 	{
-	  for (Py_ssize_t i = 0; i < PyList_GET_SIZE (res); ++i)
+	  /* If the application ends up here, it means trouble */
+	  PyObject *traceback_module = PyImport_ImportModule ("traceback");
+	  PyObject *args = PyTuple_New (3);
+	  PyObject *traceback_module_dict = PyModule_GetDict (traceback_module);
+	  PyTuple_SetItem (args, 0, etype);
+	  PyTuple_SetItem (args, 1, evalue);
+	  PyTuple_SetItem (args, 2, etraceback);
+	  PyObject *func = PyDict_GetItemString (traceback_module_dict, 
+						 "format_exception");
+	  PyObject *res = PyObject_CallObject (func, args);
+	  if (res)
 	    {
-	      PyObject *item = PyList_GET_ITEM (res, i);
-	      QString s = PyString_AsString (item);
-	      Py_XDECREF (item);
-	      qDebug() << s;
+	      for (Py_ssize_t i = 0; i < PyList_GET_SIZE (res); ++i)
+		{
+		  PyObject *item = PyList_GET_ITEM (res, i);
+		  QString s = PyString_AsString (item);
+		  Py_XDECREF (item);
+		  qDebug() << s;
+		}
 	    }
+	  
+	  Py_XDECREF (args);
+	  Py_XDECREF (traceback_module);
 	}
-     
-      Py_XDECREF (args);
-      Py_XDECREF (traceback_module);
       exit(-1);
     }
 
