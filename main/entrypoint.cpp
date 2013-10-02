@@ -174,6 +174,25 @@ static inline void QgmPyDebug (PyObject *object)
 }
 
 
+static inline bool checkTypeIsExit (PyObject *etype)
+{
+  PyObject *exceptions_module = PyImport_ImportModule("exceptions");
+  PyObject *exceptions_module_dict = PyModule_GetDict (exceptions_module);
+  PyObject *system_exit = PyDict_GetItemString (exceptions_module_dict,
+						"SystemExit");
+  bool result = (PyObject_RichCompareBool (system_exit, etype, Py_EQ) == 1);
+  
+  Py_XDECREF (exceptions_module);
+  return result;
+}
+
+static inline void qgisMobilityExit (int code)
+{
+  QgsMobilityWorker::instance().halt();
+  QApplication::processEvents ();
+  exit(code);
+}
+
 static inline void checkedImportModule (const char *name, bool decref)
 {
   qDebug () << "Attempting import of " << name << "\n";
@@ -185,36 +204,43 @@ static inline void checkedImportModule (const char *name, bool decref)
   PyErr_Fetch (&etype, &evalue, &etraceback);
   if (evalue != NULL)
     { 
-      if (etraceback != NULL)
+      if (checkTypeIsExit (etype))
 	{
-	  /* If the application ends up here, it means trouble */
-	  PyObject *traceback_module = PyImport_ImportModule ("traceback");
-	  PyObject *args = PyTuple_New (3);
-	  PyObject *traceback_module_dict = PyModule_GetDict (traceback_module);
-	  PyTuple_SetItem (args, 0, etype);
-	  PyTuple_SetItem (args, 1, evalue);
-	  PyTuple_SetItem (args, 2, etraceback);
-	  PyObject *func = PyDict_GetItemString (traceback_module_dict, 
-						 "format_exception");
-	  PyObject *res = PyObject_CallObject (func, args);
-	  if (res)
-	    {
-	      for (Py_ssize_t i = 0; i < PyList_GET_SIZE (res); ++i)
-		{
-		  PyObject *item = PyList_GET_ITEM (res, i);
-		  QString s = PyString_AsString (item);
-		  Py_XDECREF (item);
-		  qDebug() << s;
-		}
-	    }
-	  
-	  Py_XDECREF (args);
-	  Py_XDECREF (traceback_module);
+	  Py_ssize_t the_code = PyNumber_AsSsize_t (evalue, NULL);
+	  qgisMobilityExit ((int)the_code);
 	}
-      exit(-1);
+      else
+	{
+	  if (etraceback != NULL)
+	    {
+	      /* If the application ends up here, it means trouble */
+	      PyObject *traceback_module = PyImport_ImportModule ("traceback");
+	      PyObject *args = PyTuple_New (3);
+	      PyObject *traceback_module_dict = PyModule_GetDict (traceback_module);
+	      PyTuple_SetItem (args, 0, etype);
+	      PyTuple_SetItem (args, 1, evalue);
+	      PyTuple_SetItem (args, 2, etraceback);
+	      PyObject *func = PyDict_GetItemString (traceback_module_dict, 
+						     "format_exception");
+	      PyObject *res = PyObject_CallObject (func, args);
+	      if (res)
+		{
+		  for (Py_ssize_t i = 0; i < PyList_GET_SIZE (res); ++i)
+		    {
+		      PyObject *item = PyList_GET_ITEM (res, i);
+		      QString s = PyString_AsString (item);
+		      Py_XDECREF (item);
+		      qDebug() << s;
+		    }
+		}
+	  
+	      Py_XDECREF (args);
+	      Py_XDECREF (traceback_module);
+	    }
+	  qgisMobilityExit (01);
+	}
     }
-
-  if (decref)
+  else if (decref)
     {
       Py_XDECREF (config_module);
     }
@@ -360,18 +386,7 @@ int runtime (int argc, char * argv[])
 #if defined (ANDROID)
   run_interactivenetconsole ();
 #endif
-  app.exec ();
-  
-  Py_Finalize();
-
-#if defined (ANDROID)
-  if (alloca_prefix) delete alloca_prefix;
-  if (alloca_plugin) delete alloca_plugin;
-  if (alloca_app)    delete alloca_app;
-#endif
-
-  if (python_path_buffer) delete python_path_buffer;
-
-  return 0;
-
+  int code = app.exec ();
+  qgisMobilityExit(code);
+  return code;
 }

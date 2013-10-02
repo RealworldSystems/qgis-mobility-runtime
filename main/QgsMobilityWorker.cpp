@@ -26,6 +26,7 @@
 #include <QtCore/QStringList>
 #include <QtXml/QDomNodeList>
 #include <QtCore/QDebug>
+#include <QtCore/QCoreApplication>
 
 static QgsMobilityProjectWorker *projectWorker_p = 0;
 static QgsMobilityWorker *worker_p = 0;
@@ -276,7 +277,7 @@ void QgsMobilityWorker::halt (void)
 {
   this->mHalt = true; /* Boolean assignment is atomic */
   this->mSemaphore.release ();
-  this->mThread.exit ();
+  this->mThread.wait ();
 }
 
 QgsMobilityWorker::Data QgsMobilityWorker::getDataCopy (void)
@@ -289,7 +290,9 @@ void QgsMobilityWorker::doWork (void)
 {
   do
     {
+      qDebug() << "Re-enter";
       mSemaphore.acquire ();
+      qDebug() << "Should halt?" << this->mHalt;
       
       /* If halt is set, work is done */
       if (! this->mHalt)
@@ -310,4 +313,7 @@ void QgsMobilityWorker::doWork (void)
 	}
     }
   while (! this->mHalt);
+  qDebug() << "Halted";
+  this->mThread.exit ();
+  QCoreApplication::instance () -> processEvents ();
 }
