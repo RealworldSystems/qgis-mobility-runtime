@@ -51,6 +51,7 @@
 #if HAVE_GETPID == 1
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 #endif
 
@@ -190,12 +191,12 @@ static inline void qgisMobilityExit (int code)
 {
   QgsMobilityWorker::instance().halt();
   QApplication::processEvents ();
-  exit(code);
+  _exit(code);
 }
 
 static inline void checkedImportModule (const char *name, bool decref)
 {
-  qDebug () << "Attempting import of " << name << "\n";
+  qDebug () << "Attempting import of" << name << "\n";
   PyObject *config_module = PyImport_ImportModule (name);
   PyObject *etype, *evalue, *etraceback;
   etype = NULL;
@@ -284,46 +285,64 @@ int runtime (int argc, char * argv[])
   QString prefix_path = "--prefix-path=" % QString(getenv("PREFIX_PATH"));
   QString plugin_path = "--plugin-path=" % QString(getenv("PLUGIN_PATH"));
   QString app_path = QString(getenv("PREFIX_PATH")) % "/files/application";
+  QString python_dump = "/sdcard/python_dump.log";
 
   qDebug() << "Prefix Path: " << prefix_path;
   qDebug() << "Plugin Path: " << plugin_path;
   qDebug() << "Application: " << app_path;
+  qDebug() << "Python Dump: " << python_dump;
 
   char *alloca_prefix = new char[prefix_path.size () + 1];
   char *alloca_plugin = new char[plugin_path.size () + 1];
   char *alloca_app = new char[app_path.size () + 1];
+  char *alloca_dump = new char[python_dump.size () + 1];
 
   memset (alloca_prefix, 0, prefix_path.size () + 1);
   memset (alloca_plugin, 0, plugin_path.size () + 1);
   memset (alloca_app, 0, app_path.size () + 1);
+  memset (alloca_dump, 0, python_dump.size () + 1);
 
   QByteArray prefix_ba = prefix_path.toUtf8();
   QByteArray plugin_ba = plugin_path.toUtf8();
   QByteArray app_ba = app_path.toUtf8();
+  QByteArray dump_ba = python_dump.toUtf8();
 
   memcpy(alloca_prefix, prefix_ba.constData (), prefix_path.size ());
   memcpy(alloca_plugin, plugin_ba.constData (), plugin_path.size ());
   memcpy(alloca_app, app_ba.constData (), app_path.size ());
+  memcpy(alloca_dump, dump_ba.constData (), python_dump.size ());
 
   qDebug() << "Allocated Prefix" << QString(alloca_prefix);
   qDebug() << "Allocated Plugin" << QString(alloca_plugin);
   qDebug() << "Allocated Application" << QString(alloca_app);
+  qDebug() << "Python Log Dump" << QString(alloca_dump);
 
   android_argv[1] = alloca_prefix;
   android_argv[2] = alloca_plugin;
   
   setenv ("AUTOCONF_PROJECT_CODE_PATH", alloca_app, 1);
+
+  setenv("PYTHONIOENCODING", "cp1252", 1);
+  int tmpfd;
+  tmpfd = open(alloca_dump, O_CREAT | O_WRONLY);
+  dup2(tmpfd, 2);
+  dup2(tmpfd, 1);
+
 #endif
+
+  qDebug() << "Initializing Python";
 
   Py_Initialize();
 
 #if !defined (ANDROID)
   PySys_SetArgv(argc, argv);
 #else
+  qDebug() << "Setting Android argument vector";
   PySys_SetArgv(3, android_argv);  
 #endif
 
   QString python_path = QString(getenv("PYTHONPATH"));
+  qDebug() << "Initial Python path" << python_path;
   
 #if defined (HAVE_GETPID) && !defined (ANDROID) && HAVE_GETPID == 1
   if (python_path.size ())

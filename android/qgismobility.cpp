@@ -37,8 +37,58 @@ static void setenv_from_qstring (const char *name, QString value)
   setenv (name, byteArray.constData(), 1);
 }
 
+static bool base_path_from_cwd (QStringList &base_path)
+{
+  
+  /* Attempt to get the base path from the current working directory. If sensible,
+     store the base path into the given list and return true, else return false and
+     leave the given list as is */
+  char buf[2048];
+  memset (buf, 0, 2048);
+  getcwd (buf, 2048);
+  
+  QString transformed (buf);
+  int transformed_size = transformed.size ();
+  bool proper = false;
+
+  if (transformed_size > 6)
+    {
+      /* Reduce the string using the "/files" as character array */
+      char the_files[] = "/files";
+      proper = true;
+      int offset = transformed_size - 6;
+      for (int i = 0; i < 6; i++)
+	{
+	  if (the_files[i] != transformed[offset + i])
+	    {
+	      proper = false;
+	    }
+	}
+    }
+
+  if (proper) {
+    base_path << transformed.left (transformed_size - 6);
+  }
+
+  return proper;
+}
+
 static QString acquire_base_path (void)
 {
+
+  /* It appears Android 4.3 (and higher) use a different, easier way to calculate
+     the base path, as this is simply the current working directory minus the /files
+     portion, So this procedure has a different approach for Android 4.3, by using
+     getcwd with a large enough buffer.
+     
+     However, it is rather uneasy to discover if the proper folder is used, so this
+     routine checks whether the last portion is actually /files. */
+
+  QStringList lst;
+  if (base_path_from_cwd (lst)) {
+    return lst[0];
+  }
+
   QString proc_path = "/proc/";
   QString maps_file = "/maps";
 
@@ -57,10 +107,10 @@ static QString acquire_base_path (void)
   QString base_path;
 
   QTextStream in (&file);
-
+  
   QRegExp splitter ("^[^\\s]+\\s+[^\\s]+\\s+[^\\s]+\\s+[^\\s]+\\s+[^\\s]+\\s+");
   QString line;
-  
+
   do
     {
       line = in.readLine ();
