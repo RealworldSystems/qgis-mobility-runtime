@@ -27,10 +27,13 @@
 #include <QtXml/QDomNodeList>
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
+#include <QtGui/QApplication>
+#include <QtGui/QDesktopWidget>
 
 static QgsMobilityProjectWorker *projectWorker_p = 0;
 static QgsMobilityWorker *worker_p = 0;
 static double currentScale = 0;
+static unsigned long int __dpi = 0;
 
 QgsMobilityWorker::QgsMobilityWorker (void) :
   mSemaphore (0),
@@ -55,6 +58,11 @@ QgsMobilityWorker &QgsMobilityWorker::instance (void)
 {
   if (::worker_p == 0)
     {
+      QDesktopWidget desktop;
+      double dpi_x = (double)desktop.physicalDpiX();
+      double dpi_y = (double)desktop.physicalDpiY();
+      __dpi = (unsigned long int)((dpi_x + dpi_y) / 2);
+      
       ::worker_p = new QgsMobilityWorker ();
       atexit (QgsMobilityWorker::destroy);
       ::projectWorker_p = new QgsMobilityProjectWorker(::worker_p);
@@ -246,7 +254,7 @@ void QgsMobilityWorker::setSize (const QSize &size)
   this->mData.size = size;
   if (size.width () && size.height ())
     {
-      this->mRenderer.setOutputSize (this->mData.size, 96);
+      this->mRenderer.setOutputSize (this->mData.size, __dpi);
 
       if (::currentScale != 0)
 	{
