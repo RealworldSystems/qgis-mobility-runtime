@@ -45,6 +45,7 @@ QgsMobilityQMLMap::QgsMobilityQMLMap (void) :
   QDeclarativeItem (),
   mRotate (0),
   mMouseMovePoint (0, 0),
+  mFixed (false),
   mMutex (QMutex::Recursive)
 {
   //setCacheMode (QGraphicsItem::DeviceCoordinateCache);
@@ -106,6 +107,18 @@ qreal QgsMobilityQMLMap::screenOffset (int range)
 }
 
 
+void QgsMobilityQMLMap::setFixed (bool b)
+{
+  this->mFixed = b;
+}
+ 
+bool QgsMobilityQMLMap::fixed (void)
+{
+  return this->mFixed;
+}
+
+
+
 QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
 {
   QRectF bounds = this->boundingRect ();
@@ -141,7 +154,7 @@ void QgsMobilityQMLMap::mousePressAndHold (void)
 
 void QgsMobilityQMLMap::mouseMoveEvent (QGraphicsSceneMouseEvent *event)
 {
-  if (this->mMouseCanMoveMap)
+  if (this->mMouseCanMoveMap && !this->mFixed)
     {
       this->mMousePressAndHoldTimer.stop ();
       mMouseMovePoint = (event->pos () - event->buttonDownPos (Qt::LeftButton));
@@ -179,7 +192,7 @@ void QgsMobilityQMLMap::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
   qDebug() << "New Current w/ offset x:" << current.x() << "y:" << current.y();
 
 
-  if (mMouseMovePoint.x () != 0 || mMouseMovePoint.y () != 0)
+  if (!this->mFixed && (mMouseMovePoint.x () != 0 || mMouseMovePoint.y () != 0))
     {
       QPointF start = this->calculateCounterPosition (event->buttonDownPos (Qt::LeftButton));
       QgsMobility::instance()->panByPixels (start.x (), 

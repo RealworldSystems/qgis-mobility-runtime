@@ -28,6 +28,7 @@
 class QgsMobilityQMLMap : public QDeclarativeItem
 {
 Q_OBJECT
+Q_PROPERTY (bool fixed READ fixed WRITE setFixed NOTIFY fixedChanged);
 
 public slots:
   void retrieveImage (const QImage &);
@@ -35,6 +36,7 @@ public slots:
 
  signals:
   void mapRendered (void);
+  void fixedChanged();
   
 public:
   QgsMobilityQMLMap (void);
@@ -44,6 +46,8 @@ public:
   QPointF renderPixelToMapPixel (const QPointF &);
 
   static QgsMobilityQMLMap *getDefault (void);
+  void setFixed (bool);
+  bool fixed (void);
 
 protected:
   void geometryChanged (const QRectF &, const QRectF &);
@@ -61,6 +65,7 @@ private:
   qint64 mMousePressMillis;
   QTimer mMousePressAndHoldTimer;
   bool mMouseCanMoveMap;
+  bool mFixed;
 
   QImage copyImage (void);
   qreal cornerPolar (void);
