@@ -150,12 +150,27 @@ static QString acquire_base_path (void)
   return base_path;
 }
 
+static void i18n_cpp_phase (const QString &files_path)
+{
+  /* Given that Java should write a language file in the files path,
+     called '__language__', read it and set the LANGUAGE environment
+     properly */
+
+  QFile file (files_path % "/__language__");
+  file.open(QIODevice::ReadOnly | QIODevice::Text);
+  QTextStream in (&file);
+  QString line = in.readLine ();
+  setenv_from_qstring ("LANGUAGE", line);
+}
+
 static void initialize_environ (const QString &base_path)
 {
   QString files_path = base_path % "/files";
   QString python_home_path = files_path % "/python";
-
   QString library_path = base_path % "/lib";
+
+  /* Initialize the LANGUAGE environment variable, So C++ and Python have it */
+  i18n_cpp_phase (files_path);
 
   setenv_from_qstring ("PYTHONHOME", python_home_path);
   
