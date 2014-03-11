@@ -46,6 +46,7 @@ QgsMobilityQMLMap::QgsMobilityQMLMap (void) :
   mRotate (0),
   mMouseMovePoint (0, 0),
   mFixed (false),
+  mLocked (false),
   mMutex (QMutex::Recursive)
 {
   //setCacheMode (QGraphicsItem::DeviceCoordinateCache);
@@ -111,13 +112,28 @@ void QgsMobilityQMLMap::setFixed (bool b)
 {
   this->mFixed = b;
 }
+
+void QgsMobilityQMLMap::setLocked (bool b)
+{
+  QMutexLocker locker (&this->mMutex);
+
+  this->mLocked = b;
+  if (!b)
+    {
+      int diagonal = this->diagonal ();
+      QgsMobilityWorker::instance().setSize(QSize(diagonal, diagonal));
+    }
+}
  
 bool QgsMobilityQMLMap::fixed (void)
 {
   return this->mFixed;
 }
 
-
+bool QgsMobilityQMLMap::locked (void)
+{
+  return this->mLocked;
+}
 
 QPointF QgsMobilityQMLMap::counterViewportOffset (const QPointF & viewport)
 {
@@ -242,8 +258,12 @@ void QgsMobilityQMLMap::rotate (int rotation)
 
 void QgsMobilityQMLMap::geometryChanged (const QRectF & n, const QRectF &)
 {
-  int diagonal = this->diagonal ();
-  QgsMobilityWorker::instance().setSize(QSize(diagonal, diagonal));
+  QMutexLocker locker (&this->mMutex);
+  if (!mLocked)
+    {
+      int diagonal = this->diagonal ();
+      QgsMobilityWorker::instance().setSize(QSize(diagonal, diagonal));
+    }
 }
 
 int QgsMobilityQMLMap::diagonal (void)
@@ -261,29 +281,32 @@ int QgsMobilityQMLMap::diagonal (void)
 
 void QgsMobilityQMLMap::paint (QPainter *paint, const QStyleOptionGraphicsItem *, QWidget *)
 {
-  
-  QImage image = this->copyImage ();
+  QMutexLocker locker (&this->mMutex);
+  if (!mLocked)
+    {
+      QImage image = this->copyImage ();
+      
+      QRectF bounds = this->boundingRect ();
+      int diagonal = this->diagonal ();
+      
+      QTransform transform;
 
-  QRectF bounds = this->boundingRect ();
-  int diagonal = this->diagonal ();
-  
-  QTransform transform;
-
-  int height_of_window = bounds.height ();
-  int height_delta = diagonal - height_of_window;
-  int shift_up = height_delta / 2;
-
-  int width_of_window = bounds.width ();
-  int width_delta = diagonal - width_of_window;
-  int shift_left = width_delta / 2;
-
-  transform.translate(- shift_left + mMouseMovePoint.x (), - shift_up + mMouseMovePoint.y ());
-  transform.translate(diagonal / 2, diagonal / 2);
-  transform.rotate(mRotate);
-  transform.translate(- (diagonal / 2), - (diagonal / 2));
-  
-  paint->setTransform(transform);
-  paint->drawImage (0, 0, image);
-  
-  emit mapRendered ();
+      int height_of_window = bounds.height ();
+      int height_delta = diagonal - height_of_window;
+      int shift_up = height_delta / 2;
+      
+      int width_of_window = bounds.width ();
+      int width_delta = diagonal - width_of_window;
+      int shift_left = width_delta / 2;
+      
+      transform.translate(- shift_left + mMouseMovePoint.x (), - shift_up + mMouseMovePoint.y ());
+      transform.translate(diagonal / 2, diagonal / 2);
+      transform.rotate(mRotate);
+      transform.translate(- (diagonal / 2), - (diagonal / 2));
+      
+      paint->setTransform(transform);
+      paint->drawImage (0, 0, image);
+      
+      emit mapRendered ();
+    }
 }
