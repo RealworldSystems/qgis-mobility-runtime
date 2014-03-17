@@ -74,6 +74,7 @@ public:
   QgsPoint coordinateToPixel (const QgsPoint &);
   QgsPoint centerCoordinate (void);
   QgsRectangle extent (void);
+  QString loadProject (const QString &);
   
   static QgsMobilityWorker &instance (void);
   static void destroy (void);
@@ -88,8 +89,14 @@ private:
     Data (void);
   };
 
+
+  void setLayerSet (const QStringList &);
+  void perform (void);
+
   QSemaphore mSemaphore;
   QMutex mMutex;
+  QMutex mLayerSetMutex;
+  QStringList mLayerSet;
   Data mData;
   QgsMapRenderer mRenderer;
   QThread mThread;

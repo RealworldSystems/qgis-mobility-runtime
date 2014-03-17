@@ -19,13 +19,14 @@
 
 #include "config.h"
 
-#include <QtCore/QFileInfo>
+#include <QtCore/QDebug>
 
 #include <QgsMobility.h>
 #include <QgsMobilityWorker.h>
 #include <QgsMobilityQMLMap.h>
 #include <qgsproject.h>
 #include <qgspoint.h>
+#include <qgsmaplayerregistry.h>
 
 
 static QgsMobility * instance = 0;
@@ -46,11 +47,7 @@ QgsMobility::QgsMobility (void)
 
 QString QgsMobility::load_project (QString projectfile)
 {
-  QgsProject *project = QgsProject::instance ();
-  QFileInfo fileInfo = QFileInfo (projectfile);
-  project->read (fileInfo);
-  QString error = project->error ();
-  return error;
+  return QgsMobilityWorker::instance().loadProject (projectfile);
 }
 
 

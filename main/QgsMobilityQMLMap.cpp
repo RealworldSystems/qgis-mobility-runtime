@@ -116,6 +116,7 @@ void QgsMobilityQMLMap::setFixed (bool b)
 void QgsMobilityQMLMap::setLocked (bool b)
 {
   QMutexLocker locker (&this->mMutex);
+  qDebug() << "Lock map?" << b;
 
   this->mLocked = b;
   if (!b)

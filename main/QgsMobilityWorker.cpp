@@ -18,6 +18,7 @@
 
 #include <qgsmaplayerregistry.h>
 
+#include <QtCore/QFileInfo>
 #include <QgsMobilityWorker.h>
 #include <QgsMobilityPainter.h>
 #include <QgsMobility.h>
@@ -38,7 +39,9 @@ static unsigned long int __dpi = 0;
 QgsMobilityWorker::QgsMobilityWorker (void) :
   mSemaphore (0),
   mHalt (false),
-  mMutex (QMutex::Recursive) { }
+  mMutex (QMutex::Recursive),
+  mLayerSetMutex(QMutex::Recursive),
+  mLayerSet(QStringList ()) { }
 
 QgsMobilityWorker::~QgsMobilityWorker (void)
 {
@@ -138,8 +141,12 @@ void QgsMobilityProjectWorker::readProject (const QDomDocument &doc)
 void QgsMobilityProjectWorker::setLayerSet (const QStringList &list)
 {
   QMutexLocker locker (&(this->mWorker_p->mMutex));
-  
-  this->renderer().setLayerSet (list);
+   
+  /* The layer set should be set when the renderer is actually starting
+     to render */
+ 
+  this->mWorker_p->setLayerSet (list);
+ 
   this->reset ();
 }
 
@@ -294,31 +301,66 @@ QgsMobilityWorker::Data QgsMobilityWorker::getDataCopy (void)
   return this->mData;
 }
 
+void QgsMobilityWorker::setLayerSet (const QStringList& list)
+{
+  QMutexLocker locker (&(this->mLayerSetMutex));
+  
+  this->mLayerSet = list;
+}
+
+QString QgsMobilityWorker::loadProject (const QString& projectfile)
+{
+  QMutexLocker locker (&(this->mLayerSetMutex));
+
+  int registry_size = QgsMapLayerRegistry::instance()->mapLayers().size ();
+  qDebug() << "Map layers in registry ->" << registry_size;
+  if(registry_size > 0)
+    {
+      QgsMapLayerRegistry::instance()->removeAllMapLayers();
+      qDebug() << "Resetting layers in map registry to 0";
+    }
+  QgsProject *project = QgsProject::instance ();
+  QFileInfo fileInfo = QFileInfo (projectfile);
+  project->read (fileInfo);
+  QString error = project->error ();
+  return error;
+}
+
+void QgsMobilityWorker::perform (void)
+{
+  qDebug() << "Re-enter";
+  mSemaphore.acquire ();
+  qDebug() << "Should halt?" << this->mHalt;
+  QMutexLocker locker (&(this->mLayerSetMutex));
+  
+  qDebug() << "Using layerset for rendering:" << this->mLayerSet;
+
+  this->mRenderer.setLayerSet(this->mLayerSet);
+      
+  /* If halt is set, work is done */
+  if (! this->mHalt)
+    {
+      Data data = this->getDataCopy ();
+      QImage image (data.size, QImage::Format_ARGB32);
+	  
+      if (data.size.width () && data.size.height ())
+	{
+	  image.fill (QColor (255, 255, 255).rgb ());
+	  QgsMobilityPainter paint;
+	  paint.begin (&image);
+	  paint.setClipRect (image.rect ());
+	  this->mRenderer.render (&paint);
+	  paint.end ();
+	}
+      emit ready (image);
+    }
+}
+
 void QgsMobilityWorker::doWork (void)
 {
   do
     {
-      qDebug() << "Re-enter";
-      mSemaphore.acquire ();
-      qDebug() << "Should halt?" << this->mHalt;
-      
-      /* If halt is set, work is done */
-      if (! this->mHalt)
-	{
-	  Data data = this->getDataCopy ();
-	  QImage image (data.size, QImage::Format_ARGB32);
-	  
-	  if (data.size.width () && data.size.height ())
-	    {
-	      image.fill (QColor (255, 255, 255).rgb ());
-	      QgsMobilityPainter paint;
-	      paint.begin (&image);
-	      paint.setClipRect (image.rect ());
-	      this->mRenderer.render (&paint);
-	      paint.end ();
-	    }
-  	  emit ready (image);
-	}
+      this->perform ();
     }
   while (! this->mHalt);
   qDebug() << "Halted";
