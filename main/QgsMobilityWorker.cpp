@@ -330,19 +330,24 @@ void QgsMobilityWorker::perform (void)
 {
   qDebug() << "Re-enter";
   mSemaphore.acquire ();
-  qDebug() << "Should halt?" << this->mHalt;
-  QMutexLocker locker (&(this->mLayerSetMutex));
   
-  qDebug() << "Using layerset for rendering:" << this->mLayerSet;
+  bool halt = mHalt;
 
-  this->mRenderer.setLayerSet(this->mLayerSet);
-      
+  qDebug() << "Should halt?" << halt;
   /* If halt is set, work is done */
-  if (! this->mHalt)
+  if (!halt)
     {
+
+      QMutexLocker locker (&(this->mLayerSetMutex));
+      
+      qDebug() << "Current layerset count used:" << this->mLayerSet.count();
+      
+      this->mRenderer.setLayerSet(this->mLayerSet);
+      
+      qDebug() << "Retrieving data";
       Data data = this->getDataCopy ();
       QImage image (data.size, QImage::Format_ARGB32);
-	  
+      qDebug() << "Created image backbone";
       if (data.size.width () && data.size.height ())
 	{
 	  image.fill (QColor (255, 255, 255).rgb ());
@@ -352,6 +357,7 @@ void QgsMobilityWorker::perform (void)
 	  this->mRenderer.render (&paint);
 	  paint.end ();
 	}
+      qDebug() << "Emit Ready";
       emit ready (image);
     }
 }
