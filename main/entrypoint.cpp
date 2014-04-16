@@ -333,6 +333,8 @@ int runtime (int argc, char * argv[])
   qDebug() << "Initializing Python";
 
   Py_Initialize();
+  PyEval_InitThreads();
+  PyEval_ReleaseLock();
 
 #if !defined (ANDROID)
   PySys_SetArgv(argc, argv);
